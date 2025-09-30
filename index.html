@@ -43,6 +43,7 @@
             transition: all 0.2s ease-in-out;
             text-decoration: none;
             color: inherit;
+            height: 100%;
         }
         .nav-card:hover {
             transform: translateY(-5px);
@@ -52,7 +53,14 @@
             border-color: #0d6efd;
             box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .25);
         }
-        .nav-card .card-body { padding: 1.5rem; }
+        .nav-card .card-body { 
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 170px;
+        }
         .nav-card-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
         .nav-card-title { font-weight: 700; font-size: 1.1rem; }
 
@@ -102,7 +110,17 @@
         .reservoir-title-mascarenhas { border-bottom-color: #0d6efd; color: #0d6efd; }
         .vessel-card-mascarenhas { border-left-color: #0d6efd; }
         .vessel-card-mascarenhas:hover { box-shadow: 0 .5rem 1rem rgba(13, 110, 253, .25); }
-        .modal-vessel-image { max-width: 100%; height: auto; max-height: 220px; border-radius: .25rem; object-fit: cover; margin-bottom: 1.5rem; }
+        .modal-vessel-image {
+            max-width: 100%;
+            height: auto;
+            max-height: 220px;
+            border-radius: .25rem;
+            object-fit: cover;
+            margin-bottom: 1.5rem;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
         /* --- Estilos da Seção CRONOGRAMA --- */
         .schedule-container {
@@ -111,24 +129,6 @@
             border-radius: 8px;
             overflow: hidden; padding: 1.5rem;
         }
-
-        .nav-card-icon svg {
-    width: 2.5rem;
-    height: 2.5rem;
-}
-.nav-card {
-    height: 100%;
-    display: flex;
-    align-items: stretch;
-}
-
-.nav-card .card-body {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 170px; /* ajuste o valor caso queira os cards mais altos ou baixos */
-}
         .schedule-table { width: 100%; border-collapse: collapse; }
         .schedule-table th, .schedule-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; vertical-align: top; }
         .schedule-table thead th { background-color: #343a40; color: #ffffff; padding: 12px; }
@@ -172,15 +172,7 @@
                 <div class="col-lg-3 col-md-5">
                     <a href="#" class="card nav-card" data-target="frota-section">
                         <div class="card-body">
-                           <div class="nav-card-icon">
-    <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-        <path d="M12 36h16l4 8H8z" fill="currentColor"></path>
-        <path d="M28 26h16l4 8H24z" fill="currentColor" opacity="0.8"></path>
-        <path d="M44 18h16l4 8H40z" fill="currentColor" opacity="0.6"></path>
-        <path d="M6 48c4 2 8 2 12 0s8-2 12 0 8 2 12 0 8-2 12 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
-    </svg>
-    <span class="visually-hidden">Ícone representando múltiplas embarcações</span>
-</div>
+                           <div class="nav-card-icon"><i class="bi bi-ship-fill"></i></div>
                            <h3 class="nav-card-title">Embarcações</h3>
                         </div>
                     </a>
@@ -254,17 +246,30 @@
                     <h5 class="modal-title" id="vesselDetailsModalLabel">Detalhes da Embarcação</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body text-center">
-                    <h4 id="modalVesselName" class="mb-1 text-primary"></h4>
-                    <p id="modalVesselCity" class="text-muted"></p>
-                    <img id="modalVesselImage" src="" alt="Imagem da Embarcação" class="modal-vessel-image img-fluid">
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <h4 id="modalVesselName" class="mb-1 text-primary"></h4>
+                        <p id="modalVesselCity" class="text-muted"></p>
+                        <img id="modalVesselImage" src="" alt="Imagem da Embarcação" class="modal-vessel-image img-fluid">
+                    </div>
                     <div class="details-section text-start mt-4">
-                        <h6><i class="bi bi-clipboard-data"></i> Componentes</h6>
+                        <h6><i class="bi bi-clipboard-data"></i> Status dos Componentes</h6>
                         <ul class="list-group">
-                            <li class="list-group-item d-flex justify-content-between align-items-center"><span><i class="bi bi-gear-fill text-muted"></i> Motor Bombordo</span> <strong id="modalMotorBE">N/A</strong></li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center"><span><i class="bi bi-arrow-repeat text-muted"></i> Reversor Bombordo</span> <strong id="modalReversorBE">N/A</strong></li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center"><span><i class="bi bi-gear-fill text-muted"></i> Motor Boreste</span> <strong id="modalMotorBB">N/A</strong></li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center"><span><i class="bi bi-arrow-repeat text-muted"></i> Reversor Boreste</span> <strong id="modalReversorBB">N/A</strong></li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-gear-fill text-muted"></i> Motores</span>
+                                <div><strong id="modalMotorStatusBE">N/A</strong> / <strong id="modalMotorStatusBB">N/A</strong></div>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-arrow-repeat text-muted"></i> Reversores</span>
+                                <div><strong id="modalReversorStatusBE">N/A</strong> / <strong id="modalReversorStatusBB">N/A</strong></div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="details-section text-start mt-4">
+                        <h6><i class="bi bi-info-circle-fill"></i> Informações Técnicas</h6>
+                        <ul class="list-group list-group-flush">
+                             <li class="list-group-item"><strong>Motor:</strong> <span id="modalMotorInfo">N/A</span></li>
+                             <li class="list-group-item"><strong>Reversor:</strong> <span id="modalReversorInfo">N/A</span></li>
                         </ul>
                     </div>
                 </div>
@@ -370,20 +375,42 @@
 
         // --- MÓDULO DA FROTA ---
         function initFrotaModule() {
-            const dadosDaFrota = [ { "embarcação": "Águas Verdes", "cidade": "Carmo do Rio Claro", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry1.jpg" }, { "embarcação": "Araúna", "cidade": "Fama", "motor bb": "Revisar", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg" }, { "embarcação": "Canastra", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry3.jpg" }, { "embarcação": "Delfinópolis", "cidade": "São José da Barra", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry1.jpg" }, { "embarcação": "Delfinópolis I", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg" }, { "embarcação": "Fama", "cidade": "Alfenas", "motor bb": "OK", "reversor bb": "Falha", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry3.jpg" }, { "embarcação": "Fernandes", "cidade": "Cristais", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry1.jpg" }, { "embarcação": "Guapé", "cidade": "Guapé", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg" }, { "embarcação": "Harmonia", "cidade": "Guapé", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry3.jpg" }, { "embarcação": "Itapiché", "cidade": "Itapiché", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry1.jpg" }, { "embarcação": "Nossa Senhora dos Navegantes VII", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg" }, { "embarcação": "Nossa Senhora dos Navegantes X", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry3.jpg" }, { "embarcação": "Pontalete", "cidade": "Três Pontas", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry1.jpg" }, { "embarcação": "Rio Grande 2005", "cidade": "Delfinópolis", "motor bb": "Revisar", "reversor bb": "Revisar", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg" }, { "embarcação": "Rio Grande IV", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry3.jpg" }, { "embarcação": "Saliba", "cidade": "Campo Belo", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry1.jpg" }, { "embarcação": "São Francisco I", "cidade": "Guapé", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg" } ];
+            const dadosDaFrota = [
+                { "embarcação": "Águas Verdes", "cidade": "Carmo do Rio Claro", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/%C3%81guas%20Verdes.jpg", "motorInfo": "Scania DSI 14", "reversorInfo": "ZF-350 3:1" },
+                { "embarcação": "Araúna", "cidade": "Fama", "motor bb": "Revisar", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Arauna.jpg", "motorInfo": "MWM 229-6", "reversorInfo": "Twin Disc 2.5:1" },
+                { "embarcação": "Canastra", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Canastra.jpg", "motorInfo": "Scania DSI 14", "reversorInfo": "ZF-350 3:1" },
+                { "embarcação": "Delfinópolis I", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg", "motorInfo": "Volvo Penta D12", "reversorInfo": "ZF-325 2.5:1" },
+                { "embarcação": "Fama", "cidade": "Alfenas", "motor bb": "OK", "reversor bb": "Falha", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/FAMA.jpg", "motorInfo": "MWM 229-6", "reversorInfo": "Twin Disc 2.5:1" },
+                { "embarcação": "Fernandes", "cidade": "Cristais", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Fernandes.jpg", "motorInfo": "Scania DSI 11", "reversorInfo": "ZF-300 2:1" },
+                { "embarcação": "Guapé", "cidade": "Guapé", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Guap%C3%A9.jpg", "motorInfo": "MWM 229-6", "reversorInfo": "Twin Disc 2.5:1" },
+                { "embarcação": "Harmonia", "cidade": "Guapé", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Harmonia.jpg", "motorInfo": "Scania DSI 11", "reversorInfo": "ZF-300 2:1" },
+                { "embarcação": "Itapiché", "cidade": "Itapiché", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Itapich%C3%A9.jpg", "motorInfo": "MWM 229-4", "reversorInfo": "Twin Disc 2:1" },
+                { "embarcação": "Nossa Senhora dos Navegantes VII", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg", "motorInfo": "Volvo Penta D12", "reversorInfo": "ZF-325 2.5:1" },
+                { "embarcação": "Nossa Senhora dos Navegantes X", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/NSDN%20X.jpg", "motorInfo": "Volvo Penta D12", "reversorInfo": "ZF-325 2.5:1" },
+                { "embarcação": "Pontalete", "cidade": "Três Pontas", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Pontalete.jpg", "motorInfo": "Scania DSI 11", "reversorInfo": "ZF-300 2:1" },
+                { "embarcação": "Rio Grande 2005", "cidade": "Delfinópolis", "motor bb": "Revisar", "reversor bb": "Revisar", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Rio%20Grande%202005.jpg", "motorInfo": "Volvo Penta D12", "reversorInfo": "ZF-325 2.5:1" },
+                { "embarcação": "Rio Grande IV", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Rio%20Grande%20IV.jpg", "motorInfo": "Volvo Penta D12", "reversorInfo": "ZF-325 2.5:1" },
+                { "embarcação": "Saliba", "cidade": "Campo Belo", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Saliba.jpg", "motorInfo": "MWM 229-4", "reversorInfo": "Twin Disc 2:1" },
+                { "embarcação": "São Francisco I", "cidade": "Guapé", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/S%C3%A3o%20Francisco%20I.jpg", "motorInfo": "Scania DSI 11", "reversorInfo": "ZF-300 2:1" }
+            ];
+
             const elements = {
                 furnas: document.getElementById('furnas-container'), mascarenhas: document.getElementById('mascarenhas-container'),
                 modal: new bootstrap.Modal(document.getElementById('vesselDetailsModal')),
-                img: document.getElementById('modalVesselImage'), name: document.getElementById('modalVesselName'),
-                city: document.getElementById('modalVesselCity'), mbe: document.getElementById('modalMotorBE'),
-                rbe: document.getElementById('modalReversorBE'), mbb: document.getElementById('modalMotorBB'), rbb: document.getElementById('modalReversorBB'),
+                img: document.getElementById('modalVesselImage'), name: document.getElementById('modalVesselName'), city: document.getElementById('modalVesselCity'), 
+                motorStatusBE: document.getElementById('modalMotorStatusBE'), motorStatusBB: document.getElementById('modalMotorStatusBB'),
+                reversorStatusBE: document.getElementById('modalReversorStatusBE'), reversorStatusBB: document.getElementById('modalReversorStatusBB'),
+                motorInfo: document.getElementById('modalMotorInfo'), reversorInfo: document.getElementById('modalReversorInfo')
             };
+
             const allVesselsData = dadosDaFrota.map((item, index) => ({
                 ...item,
                 id: `vessel-${index}`,
-                reservoir: (item.cidade.trim() === 'Delfinópolis') ? 'Mascarenhas' : 'Furnas'
+                reservoir: (item.cidade && item.cidade.trim() === 'Delfinópolis') ? 'Mascarenhas' : 'Furnas'
             }));
+
             const getProp = (obj, key) => obj[Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase())];
+
             function generateCards(data) {
                 if (!data.length) return `<div class="col-12"><div class="alert alert-light text-center">Nenhuma embarcação encontrada.</div></div>`;
                 return data.sort((a, b) => getProp(a, 'embarcação').localeCompare(getProp(b, 'embarcação')))
@@ -394,20 +421,29 @@
                         </div>
                     </div>`).join('');
             }
+
             elements.furnas.innerHTML = generateCards(allVesselsData.filter(v => v.reservoir === 'Furnas'));
             elements.mascarenhas.innerHTML = generateCards(allVesselsData.filter(v => v.reservoir === 'Mascarenhas'));
+
             document.querySelectorAll('.vessel-card').forEach(card => card.addEventListener('click', () => {
                 const vessel = allVesselsData.find(v => v.id === card.dataset.vesselId);
                 if (!vessel) return;
+
                 const imageUrl = getProp(vessel, 'imagemUrl');
                 elements.img.style.display = imageUrl ? 'block' : 'none';
                 elements.img.src = imageUrl || '';
+
                 elements.name.textContent = getProp(vessel, 'embarcação');
                 elements.city.textContent = getProp(vessel, 'cidade');
-                elements.mbe.textContent = getProp(vessel, 'motor be') || 'N/A';
-                elements.rbe.textContent = getProp(vessel, 'reversor be') || 'N/A';
-                elements.mbb.textContent = getProp(vessel, 'motor bb') || 'N/A';
-                elements.rbb.textContent = getProp(vessel, 'reversor bb') || 'N/A';
+
+                elements.motorStatusBE.textContent = getProp(vessel, 'motor be') || 'N/A';
+                elements.motorStatusBB.textContent = getProp(vessel, 'motor bb') || 'N/A';
+                elements.reversorStatusBE.textContent = getProp(vessel, 'reversor be') || 'N/A';
+                elements.reversorStatusBB.textContent = getProp(vessel, 'reversor bb') || 'N/A';
+                
+                elements.motorInfo.textContent = getProp(vessel, 'motorInfo') || 'Não especificado';
+                elements.reversorInfo.textContent = getProp(vessel, 'reversorInfo') || 'Não especificado';
+                
                 elements.modal.show();
             }));
         }
