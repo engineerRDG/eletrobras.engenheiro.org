@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle Operacional - Vilhena Serviços</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        /* Estilos Gerais */
+        body {
+            background-color: #f0f2f5;
+            color: #343a40;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        main {
+            flex-grow: 1;
+        }
+        .navbar-brand img, .footer-logo {
+            height: 40px;
+            width: auto;
+        }
+        .page-title {
+            font-weight: 700;
+            color: #343a40;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+
+        /* Cartões de Navegação */
+        .nav-card {
+            background-color: #ffffff;
+            border: 2px solid transparent;
+            border-radius: .5rem;
+            box-shadow: 0 .15rem 1.75rem 0 rgba(58,59,69,.15);
+            transition: all 0.2s ease-in-out;
+            text-decoration: none;
+            color: inherit;
+        }
+        .nav-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+        }
+        .nav-card.active {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .25);
+        }
+        .nav-card .card-body { padding: 1.5rem; }
+        .nav-card-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+        .nav-card-title { font-weight: 700; font-size: 1.1rem; }
+
+        /* --- Estilos da Seção STATUS --- */
+        .status-card {
+            border: 1px solid #dee2e6;
+            border-left-width: 5px;
+            border-radius: .35rem;
+            box-shadow: 0 .15rem 1.75rem 0 rgba(58,59,69,.15);
+            background-color: #ffffff;
+            display: flex; flex-direction: column;
+        }
+        .status-card .card-body { padding: 1.5rem; display: flex; flex-direction: column; flex-grow: 1; justify-content: center; }
+        .status-content { text-align: center; }
+        .status-title { font-weight: 700; font-size: 1.1rem; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .status-text { font-size: 1.6rem; font-weight: 700; margin: 0.5rem 0; }
+        .status-condition { font-size: 1.1rem; font-weight: 500; color: #6c757d; margin-bottom: 0.5rem; }
+        .status-operando { border-left-color: #28a745; }
+        .status-disponivel { border-left-color: #17a2b8; }
+        .status-manutencao { border-left-color: #dc3545; }
+        .status-paralisada { border-left-color: #6c757d; }
+        .loading-spinner { display: none; text-align: center; padding: 2rem; }
+        .loading-spinner.active { display: block; }
+        
+        /* --- Estilos da Seção FROTA --- */
+        .reservoir-title { border-bottom: 2px solid; padding-bottom: 0.5rem; }
+        .vessel-card {
+            border: 1px solid #dee2e6;
+            border-left: 5px solid;
+            border-radius: .35rem;
+            box-shadow: 0 .15rem 1.75rem 0 rgba(58,59,69,.15);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            background-color: #ffffff;
+            cursor: pointer;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 1rem; min-height: 120px;
+            text-align: center;
+        }
+        .vessel-card:hover { transform: translateY(-5px); }
+        .vessel-card .card-title { font-weight: 700; font-size: 1.1rem; color: #343a40; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 8px; }
+        .vessel-card .card-title i { color: #6c757d; }
+        .vessel-card .card-city { font-size: 0.9rem; color: #6c757d; }
+        .reservoir-title-furnas { border-bottom-color: #198754; color: #198754; }
+        .vessel-card-furnas { border-left-color: #198754; }
+        .vessel-card-furnas:hover { box-shadow: 0 .5rem 1rem rgba(25, 135, 84, .25); }
+        .reservoir-title-mascarenhas { border-bottom-color: #0d6efd; color: #0d6efd; }
+        .vessel-card-mascarenhas { border-left-color: #0d6efd; }
+        .vessel-card-mascarenhas:hover { box-shadow: 0 .5rem 1rem rgba(13, 110, 253, .25); }
+        .modal-vessel-image { max-width: 100%; height: auto; max-height: 220px; border-radius: .25rem; object-fit: cover; margin-bottom: 1.5rem; }
+
+        /* --- Estilos da Seção CRONOGRAMA --- */
+        .schedule-container {
+            background-color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden; padding: 1.5rem;
+        }
+
+        .nav-card-icon svg {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+.nav-card {
+    height: 100%;
+    display: flex;
+    align-items: stretch;
+}
+
+.nav-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 170px; /* ajuste o valor caso queira os cards mais altos ou baixos */
+}
+        .schedule-table { width: 100%; border-collapse: collapse; }
+        .schedule-table th, .schedule-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; vertical-align: top; }
+        .schedule-table thead th { background-color: #343a40; color: #ffffff; padding: 12px; }
+        .schedule-table tbody td { height: 150px; }
+        .schedule-event { color: white; padding: 8px; border-radius: 6px; margin-bottom: 8px; text-align: left; font-size: 0.9em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: background-color 0.2s ease; }
+        .event-title { font-weight: bold; display: block; }
+        .event-details { font-size: 0.9em; display: block; margin-top: 4px; }
+        .event-technician { font-style: italic; }
+        .event-carlos { background-color: #198754; } .event-carlos:hover { background-color: #157347; }
+        .event-juliana { background-color: #dc3545; } .event-juliana:hover { background-color: #b02a37; }
+        .event-fernando { background-color: #ffc107; color: #000; } .event-fernando:hover { background-color: #e0a800; }
+        .schedule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-black shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#" id="home-link">
+                <img src="https://raw.githubusercontent.com/engineerRDG/vilhena.engenheiro.org/refs/heads/main/imagem/logo.png" alt="Vilhena Serviços Logo">
+                <span class="ms-2">Painel de Controle</span>
+            </a>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+
+        <section id="main-menu">
+             <header class="text-center mb-4">
+                <h1 class="page-title">PAINEL DE CONTROLE OPERACIONAL</h1>
+                <p class="lead text-muted">Selecione uma opção para visualizar as informações.</p>
+            </header>
+            <div class="row text-center g-4 justify-content-center">
+                <div class="col-lg-3 col-md-5">
+                    <a href="#" class="card nav-card" data-target="status-section">
+                        <div class="card-body">
+                            <div class="nav-card-icon"><i class="bi bi-water"></i></div>
+                            <h3 class="nav-card-title">Cássia - Delfinópolis</h3>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-md-5">
+                    <a href="#" class="card nav-card" data-target="frota-section">
+                        <div class="card-body">
+                           <div class="nav-card-icon">
+    <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+        <path d="M12 36h16l4 8H8z" fill="currentColor"></path>
+        <path d="M28 26h16l4 8H24z" fill="currentColor" opacity="0.8"></path>
+        <path d="M44 18h16l4 8H40z" fill="currentColor" opacity="0.6"></path>
+        <path d="M6 48c4 2 8 2 12 0s8-2 12 0 8 2 12 0 8-2 12 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+    </svg>
+    <span class="visually-hidden">Ícone representando múltiplas embarcações</span>
+</div>
+                           <h3 class="nav-card-title">Embarcações</h3>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-md-5">
+                    <a href="#" class="card nav-card" data-target="cronograma-section">
+                        <div class="card-body">
+                            <div class="nav-card-icon"><i class="bi bi-calendar-event-fill"></i></div>
+                            <h3 class="nav-card-title">Cronograma de Atendimento</h3>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <div id="content-container" class="mt-5">
+            <section id="status-section" class="content-section">
+                <header class="d-flex justify-content-end mb-4 pb-2 border-bottom">
+                    <div id="sheet-update-info" class="text-muted text-end"></div>
+                </header>
+                <div class="loading-spinner" id="loading-spinner">
+                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div>
+                    <p class="mt-3 text-muted">Buscando informações da planilha...</p>
+                </div>
+                <div id="status-container" class="row g-4"></div>
+            </section>
+
+            <section id="frota-section" class="content-section">
+                <div id="frota-container">
+                    <section id="furnas-section" class="mb-5">
+                        <h2 class="h4 reservoir-title reservoir-title-furnas mb-4">Reservatório da Usina de Furnas</h2>
+                        <div id="furnas-container" class="row g-3"></div>
+                    </section>
+                    <section id="mascarenhas-section" class="mb-5">
+                        <h2 class="h4 reservoir-title reservoir-title-mascarenhas mb-4">Reservatório da Usina de Mascarenhas de Moraes</h2>
+                        <div id="mascarenhas-container" class="row g-3"></div>
+                    </section>
+                </div>
+            </section>
+
+            <section id="cronograma-section" class="content-section">
+                 <div class="schedule-container">
+                    <div class="schedule-header">
+                        <a href="#" class="btn btn-outline-primary" id="prev-week-btn"><i class="bi bi-arrow-left-short"></i> Semana Anterior</a>
+                        <h2 class="h4 mb-0 text-center" id="schedule-week-range">Carregando semana...</h2>
+                        <a href="#" class="btn btn-outline-primary" id="next-week-btn">Próxima Semana <i class="bi bi-arrow-right-short"></i></a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="schedule-table">
+                            <thead id="schedule-table-head"></thead>
+                            <tbody id="schedule-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+    
+    <footer class="container mt-5 mb-4 d-flex flex-wrap justify-content-between align-items-center border-top pt-4">
+        <img src="https://raw.githubusercontent.com/engineerRDG/vilhena.engenheiro.org/refs/heads/main/imagem/eletrobras.png" alt="Logo Eletrobras" class="footer-logo">
+        <div class="text-end">
+            <p class="text-muted mb-1" style="font-size: 0.9rem;"><b>Vilhena Serviços LTDA</b><br>Departamento de Engenharia e Manutenção</p>
+            <p class="text-body-tertiary mb-0" style="font-size: 0.6rem;"><b>Rodrigo M. Araujo</b><br>Engenheiro Mecânico<br>Engenheiro de Segurança do Trabalho</p>
+        </div>
+    </footer>
+
+    <div class="modal fade" id="vesselDetailsModal" tabindex="-1" aria-labelledby="vesselDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="vesselDetailsModalLabel">Detalhes da Embarcação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <h4 id="modalVesselName" class="mb-1 text-primary"></h4>
+                    <p id="modalVesselCity" class="text-muted"></p>
+                    <img id="modalVesselImage" src="" alt="Imagem da Embarcação" class="modal-vessel-image img-fluid">
+                    <div class="details-section text-start mt-4">
+                        <h6><i class="bi bi-clipboard-data"></i> Componentes</h6>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center"><span><i class="bi bi-gear-fill text-muted"></i> Motor Bombordo</span> <strong id="modalMotorBE">N/A</strong></li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center"><span><i class="bi bi-arrow-repeat text-muted"></i> Reversor Bombordo</span> <strong id="modalReversorBE">N/A</strong></li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center"><span><i class="bi bi-gear-fill text-muted"></i> Motor Boreste</span> <strong id="modalMotorBB">N/A</strong></li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center"><span><i class="bi bi-arrow-repeat text-muted"></i> Reversor Boreste</span> <strong id="modalReversorBB">N/A</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- LÓGICA DE NAVEGAÇÃO GERAL ---
+            const navCards = document.querySelectorAll('.nav-card');
+            const contentSections = document.querySelectorAll('.content-section');
+            const homeLink = document.getElementById('home-link');
+
+            function showSection(targetId, clickedCard) {
+                navCards.forEach(card => card.classList.remove('active'));
+                if (clickedCard) clickedCard.classList.add('active');
+
+                contentSections.forEach(section => {
+                    section.classList.toggle('active', section.id === targetId);
+                });
+            }
+
+            navCards.forEach(card => {
+                card.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const targetSectionId = card.getAttribute('data-target');
+                    showSection(targetSectionId, card);
+                });
+            });
+            
+            homeLink.addEventListener('click', (event) => {
+                event.preventDefault();
+                showSection(null, null);
+            });
+
+            // --- INICIALIZAÇÃO DOS MÓDULOS ---
+            initStatusModule();
+            initFrotaModule();
+            initCronogramaModule();
+        });
+
+        // --- MÓDULO DE STATUS ---
+        function initStatusModule() {
+            const apiUrl = 'https://script.google.com/macros/s/AKfycbxiLSh45xdBYElGcFKesxv14_9bbGD3LnB_N2n8B3L4xPmX87IABWPvWQehaSEnNOM/exec';
+            const elements = { 
+                statusContainer: document.getElementById('status-container'), 
+                sheetUpdateInfo: document.getElementById('sheet-update-info'), 
+                loadingSpinner: document.getElementById('loading-spinner') 
+            };
+            async function fetchData() {
+                elements.loadingSpinner.classList.add('active');
+                elements.statusContainer.innerHTML = '';
+                try {
+                    const response = await fetch(`${apiUrl}?t=${new Date().getTime()}`);
+                    if (!response.ok) throw new Error(`Falha na rede (código: ${response.status})`);
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.error);
+                    if (data[0]?.ULTIMA_ATUALIZACAO) {
+                        elements.sheetUpdateInfo.innerHTML = `<small class="d-block">Última atualização:</small><strong>${data[0]['ULTIMA_ATUALIZACAO']}</strong>`;
+                    }
+                    updateStatusCards(data);
+                } catch (error) {
+                    console.error("Erro em Status:", error);
+                    elements.statusContainer.innerHTML = `<div class="col-12"><div class="alert alert-danger"><strong>Erro:</strong> ${error.message}</div></div>`;
+                } finally {
+                    elements.loadingSpinner.classList.remove('active');
+                }
+            }
+            function updateStatusCards(data) {
+                if (!data || data.length === 0) {
+                    elements.statusContainer.innerHTML = `<div class="col-12"><div class="alert alert-warning">Nenhum dado encontrado.</div></div>`;
+                    return;
+                }
+                data.forEach(item => {
+                    if (item.STATUS === 'MANUTENCAO') item.STATUS = 'MANUTENÇÃO';
+                    if (item.STATUS === 'DISPONIVEL') item.STATUS = 'DISPONÍVEL';
+                });
+                data.sort((a, b) => {
+                    const order = { 'OPERANDO': 1, 'DISPONÍVEL': 2, 'MANUTENÇÃO': 3 };
+                    return (order[a.STATUS] || 4) - (order[b.STATUS] || 4) || (a.EMBARCACAO || '').localeCompare(b.EMBARCACAO || '');
+                });
+                elements.statusContainer.innerHTML = data.map(item => {
+                    const status = (item.STATUS || 'PARALISADA').replace('ÇÃO', 'CAO').replace('Í', 'I').toLowerCase();
+                    return `<div class="col-xl-4 col-md-6 mb-4">
+                        <div class="card status-card status-${status}">
+                            <div class="card-body">
+                                <div class="status-content">
+                                    <div class="status-title">${item.EMBARCACAO || 'Sem Nome'}</div>
+                                    <div class="status-text">${item.STATUS || 'PARALISADA'}</div>
+                                    ${item.CONDICAO ? `<div class="status-condition">${item.CONDICAO}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+            fetchData();
+            setInterval(fetchData, 60000);
+        }
+
+        // --- MÓDULO DA FROTA ---
+        function initFrotaModule() {
+            const dadosDaFrota = [ { "embarcação": "Águas Verdes", "cidade": "Carmo do Rio Claro", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry1.jpg" }, { "embarcação": "Araúna", "cidade": "Fama", "motor bb": "Revisar", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg" }, { "embarcação": "Canastra", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry3.jpg" }, { "embarcação": "Delfinópolis", "cidade": "São José da Barra", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry1.jpg" }, { "embarcação": "Delfinópolis I", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg" }, { "embarcação": "Fama", "cidade": "Alfenas", "motor bb": "OK", "reversor bb": "Falha", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry3.jpg" }, { "embarcação": "Fernandes", "cidade": "Cristais", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry1.jpg" }, { "embarcação": "Guapé", "cidade": "Guapé", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg" }, { "embarcação": "Harmonia", "cidade": "Guapé", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry3.jpg" }, { "embarcação": "Itapiché", "cidade": "Itapiché", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry1.jpg" }, { "embarcação": "Nossa Senhora dos Navegantes VII", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg" }, { "embarcação": "Nossa Senhora dos Navegantes X", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry3.jpg" }, { "embarcação": "Pontalete", "cidade": "Três Pontas", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry1.jpg" }, { "embarcação": "Rio Grande 2005", "cidade": "Delfinópolis", "motor bb": "Revisar", "reversor bb": "Revisar", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg" }, { "embarcação": "Rio Grande IV", "cidade": "Delfinópolis", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry3.jpg" }, { "embarcação": "Saliba", "cidade": "Campo Belo", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry1.jpg" }, { "embarcação": "São Francisco I", "cidade": "Guapé", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg" } ];
+            const elements = {
+                furnas: document.getElementById('furnas-container'), mascarenhas: document.getElementById('mascarenhas-container'),
+                modal: new bootstrap.Modal(document.getElementById('vesselDetailsModal')),
+                img: document.getElementById('modalVesselImage'), name: document.getElementById('modalVesselName'),
+                city: document.getElementById('modalVesselCity'), mbe: document.getElementById('modalMotorBE'),
+                rbe: document.getElementById('modalReversorBE'), mbb: document.getElementById('modalMotorBB'), rbb: document.getElementById('modalReversorBB'),
+            };
+            const allVesselsData = dadosDaFrota.map((item, index) => ({
+                ...item,
+                id: `vessel-${index}`,
+                reservoir: (item.cidade.trim() === 'Delfinópolis') ? 'Mascarenhas' : 'Furnas'
+            }));
+            const getProp = (obj, key) => obj[Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase())];
+            function generateCards(data) {
+                if (!data.length) return `<div class="col-12"><div class="alert alert-light text-center">Nenhuma embarcação encontrada.</div></div>`;
+                return data.sort((a, b) => getProp(a, 'embarcação').localeCompare(getProp(b, 'embarcação')))
+                    .map(item => `<div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                        <div class="card vessel-card vessel-card-${item.reservoir.toLowerCase()}" data-vessel-id="${item.id}">
+                            <div class="card-title"><i class="bi bi-ship-fill"></i> ${getProp(item, 'embarcação')}</div>
+                            <div class="card-city">${getProp(item, 'cidade')}</div>
+                        </div>
+                    </div>`).join('');
+            }
+            elements.furnas.innerHTML = generateCards(allVesselsData.filter(v => v.reservoir === 'Furnas'));
+            elements.mascarenhas.innerHTML = generateCards(allVesselsData.filter(v => v.reservoir === 'Mascarenhas'));
+            document.querySelectorAll('.vessel-card').forEach(card => card.addEventListener('click', () => {
+                const vessel = allVesselsData.find(v => v.id === card.dataset.vesselId);
+                if (!vessel) return;
+                const imageUrl = getProp(vessel, 'imagemUrl');
+                elements.img.style.display = imageUrl ? 'block' : 'none';
+                elements.img.src = imageUrl || '';
+                elements.name.textContent = getProp(vessel, 'embarcação');
+                elements.city.textContent = getProp(vessel, 'cidade');
+                elements.mbe.textContent = getProp(vessel, 'motor be') || 'N/A';
+                elements.rbe.textContent = getProp(vessel, 'reversor be') || 'N/A';
+                elements.mbb.textContent = getProp(vessel, 'motor bb') || 'N/A';
+                elements.rbb.textContent = getProp(vessel, 'reversor bb') || 'N/A';
+                elements.modal.show();
+            }));
+        }
+
+        // --- MÓDULO DO CRONOGRAMA ---
+        function initCronogramaModule() {
+            let currentDate = new Date();
+            const weekRangeEl = document.getElementById('schedule-week-range');
+            const tableHeadEl = document.getElementById('schedule-table-head');
+            const tableBodyEl = document.getElementById('schedule-table-body');
+            const prevBtn = document.getElementById('prev-week-btn');
+            const nextBtn = document.getElementById('next-week-btn');
+            const locale = 'pt-BR';
+
+            const scheduleData = [
+                { date: '2025-10-27', id: 'RS-2025-078', vessel: 'N. S. Navegantes VII', technician: 'Carlos', color: 'carlos', title: 'Reparo no eixo de propulsão BB' },
+                { date: '2025-10-28', id: 'RS-2025-078', vessel: 'N. S. Navegantes VII', technician: 'Carlos', color: 'carlos', title: 'Continuação do reparo no eixo' },
+                { date: '2025-10-27', id: 'RS-2025-077', vessel: 'Delfinopolis I', technician: 'Juliana', color: 'juliana', title: 'Troca de baterias' },
+                { date: '2025-10-29', id: 'RS-2025-079', vessel: 'Rio Grande IV', technician: 'Fernando', color: 'fernando', title: 'Manutenção preventiva no motor' },
+                { date: '2025-10-30', id: 'RS-2025-080', vessel: 'Canastra', technician: 'Carlos', color: 'carlos', title: 'Inspeção geral do sistema elétrico' },
+            ];
+
+            function renderCalendarEvents(startDate) {
+                let bodyHtml = '<tr>';
+                const tempDate = new Date(startDate);
+                for (let i = 0; i < 7; i++) {
+                    const dayString = tempDate.toISOString().split('T')[0];
+                    const eventsForDay = scheduleData.filter(event => event.date === dayString);
+                    bodyHtml += '<td>';
+                    if (eventsForDay.length > 0) {
+                        eventsForDay.forEach(event => {
+                            bodyHtml += `
+                                <div class="schedule-event event-${event.color}" data-bs-toggle="tooltip" title="${event.id}: ${event.title}">
+                                    <span class="event-title">${event.id}</span>
+                                    <span class="event-details">${event.vessel}</span>
+                                    <span class="event-details event-technician"><i class="bi bi-person-fill"></i> ${event.technician}</span>
+                                </div>`;
+                        });
+                    }
+                    bodyHtml += '</td>';
+                    tempDate.setDate(tempDate.getDate() + 1);
+                }
+                bodyHtml += '</tr>';
+                tableBodyEl.innerHTML = bodyHtml;
+                [...tableBodyEl.querySelectorAll('[data-bs-toggle="tooltip"]')].map(el => new bootstrap.Tooltip(el));
+            }
+            
+            function updateCalendarWeek(date) {
+                const dayOfWeek = date.getDay();
+                const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                const startOfWeek = new Date(date);
+                startOfWeek.setDate(diff);
+
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+                weekRangeEl.textContent = `Semana: ${startOfWeek.toLocaleDateString(locale, { day: '2-digit', month: 'long' })} - ${endOfWeek.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' })}`;
+
+                let headerHtml = '<tr>';
+                const tempDateHeader = new Date(startOfWeek);
+                const weekDays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                for (let i = 0; i < 7; i++) {
+                    const dayName = weekDays[tempDateHeader.getDay()];
+                    headerHtml += `<th>${dayName.substring(0,3)} (${tempDateHeader.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })})</th>`;
+                    tempDateHeader.setDate(tempDateHeader.getDate() + 1);
+                }
+                headerHtml += '</tr>';
+                tableHeadEl.innerHTML = headerHtml;
+
+                renderCalendarEvents(startOfWeek);
+            }
+
+            prevBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                currentDate.setDate(currentDate.getDate() - 7);
+                updateCalendarWeek(new Date(currentDate));
+            });
+
+            nextBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                currentDate.setDate(currentDate.getDate() + 7);
+                updateCalendarWeek(new Date(currentDate));
+            });
+            
+            updateCalendarWeek(currentDate);
+        }
+    </script>
+</body>
+</html>
