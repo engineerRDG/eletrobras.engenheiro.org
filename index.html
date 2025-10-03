@@ -15,6 +15,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
     main {
     flex-grow: 1;
@@ -138,7 +139,7 @@
     .schedule-table { width: 100%; border-collapse: collapse; }
     .schedule-table th, .schedule-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; vertical-align: top; }
     .schedule-table thead th { background-color: #343a40; color: #ffff; padding: 12px; }
-    .schedule-table tbody td { height: 150px; }
+    .schedule-table tbody td { min-height: 150px; }
     .schedule-event { color: white; padding: 8px; border-radius: 6px; margin-bottom: 8px; text-align: left; font-size: 0.9em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: background-color 0.2s ease; }
     .event-title { font-weight: bold; display: block; }
     .event-details { font-size: 0.9em; display: block; margin-top: 4px; }
@@ -146,6 +147,7 @@
     .event-carlos { background-color: #198754; } .event-carlos:hover { background-color: #157347; }
     .event-juliana { background-color: #dc3545; } .event-juliana:hover { background-color: #b02a37; }
     .event-fernando { background-color: #ffc107; color: #000; } .event-fernando:hover { background-color: #e0a800; }
+    .event-default { background-color: #0d6efd; } .event-default:hover { background-color: #0b5ed7; }
     .schedule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     </style>
 </head>
@@ -182,10 +184,10 @@
     <div class="card-body">
     <div class="nav-card-icon">
     <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-        <path d="M12 36h16l4 8H8z" fill="currentColor"></path>
-        <path d="M28 26h16l4 8H24z" fill="currentColor" opacity="0.8"></path>
-        <path d="M44 18h16l4 8H40z" fill="currentColor" opacity="0.6"></path>
-        <path d="M6 48c4 2 8 2 12 0s8-2 12 0 8 2 12 0 8-2 12 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+    <path d="M12 36h16l4 8H8z" fill="currentColor"></path>
+    <path d="M28 26h16l4 8H24z" fill="currentColor" opacity="0.8"></path>
+    <path d="M44 18h16l4 8H40z" fill="currentColor" opacity="0.6"></path>
+    <path d="M6 48c4 2 8 2 12 0s8-2 12 0 8 2 12 0 8-2 12 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
     </svg>
     <span class="visually-hidden">Ícone representando múltiplas embarcações</span>
     </div>
@@ -252,7 +254,7 @@
     <div class="text-end" href="https://rodrigo.engenheiro.org">
     <p class="text-muted mb-1" style="font-size: 0.9rem;"><b>Vilhena Serviços LTDA</b><br>Departamento de Engenharia e Manutenção</p>
     <p class="text-body-tertiary mb-0" style="font-size: 0.6rem;"><b>Rodrigo M. Araujo</b><br>Engenheiro Mecânico<br>
-        Engenheiro de Segurança do Trabalho
+    Engenheiro de Segurança do Trabalho
     <br>
 <b>rodrigo@engenheiro.org</b>
 </p>
@@ -317,6 +319,13 @@
     contentSections.forEach(section => {
     section.classList.toggle('active', section.id === targetId);
     });
+
+    if (targetId) {
+    const initFunctionName = `init${targetId.charAt(0).toUpperCase() + targetId.slice(1).replace('-section', '')}Module`;
+    if (typeof window[initFunctionName] === 'function') {
+    window[initFunctionName]();
+    }
+    }
     }
 
     navCards.forEach(card => {
@@ -331,21 +340,21 @@
     event.preventDefault();
     showSection(null, null);
     });
-
-    // --- INICIALIZAÇÃO DOS MÓDULOS ---
-    initStatusModule();
-    initFrotaModule();
-    initCronogramaModule();
-    });
+});
 
     // --- MÓDULO DE STATUS ---
-    function initStatusModule() {
+    window.initStatusModule = function() {
+    const statusContainer = document.getElementById('status-container');
+    if (statusContainer.dataset.initialized) return;
+    statusContainer.dataset.initialized = 'true';
+
     const apiUrl = 'https://script.google.com/macros/s/AKfycbxiLSh45xdBYElGcFKesxv14_9bbGD3LnB_N2n8B3L4xPmX87IABWPvWQehaSEnNOM/exec';
     const elements = { 
-    statusContainer: document.getElementById('status-container'), 
+    statusContainer: statusContainer, 
     sheetUpdateInfo: document.getElementById('sheet-update-info'), 
     loadingSpinner: document.getElementById('loading-spinner') 
     };
+
     async function fetchData() {
     elements.loadingSpinner.classList.add('active');
     elements.statusContainer.innerHTML = '';
@@ -365,6 +374,7 @@
     elements.loadingSpinner.classList.remove('active');
     }
     }
+
     function updateStatusCards(data) {
     if (!data || data.length === 0) {
     elements.statusContainer.innerHTML = `<div class="col-12"><div class="alert alert-warning">Nenhum dado encontrado.</div></div>`;
@@ -393,12 +403,18 @@
     </div>`;
     }).join('');
     }
+
     fetchData();
-    setInterval(fetchData, 60000);
+    if (window.statusInterval) clearInterval(window.statusInterval);
+    window.statusInterval = setInterval(fetchData, 60000);
     }
 
     // --- MÓDULO DA FROTA ---
-    function initFrotaModule() {
+    window.initFrotaModule = function() {
+    const frotaContainer = document.getElementById('frota-container');
+    if (frotaContainer.dataset.initialized) return;
+    frotaContainer.dataset.initialized = 'true';
+    
     const dadosDaFrota = [
     { "embarcação": "Águas Verdes", "cidade": "Carmo do Rio Claro", "tipo": "Ferry Boat", "motor bb": "MWM 229/6 aspirado", "reversor bb": "ZF BW 40", "motor be": "MWM 229/6 aspirado", "reversor be": "ZF BW 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/%C3%81guas%20Verdes.jpg"},
     { "embarcação": "Araúna", "cidade": "Fama", "tipo": "Ferry Boat", "motor bb": "MWM 229/6", "reversor bb": "ZF 40", "motor be": "MWM 229/6", "reversor be": "ZF 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Arauna.jpg"},
@@ -417,11 +433,11 @@
     { "embarcação": "Saliba", "cidade": "Campo Belo", "tipo": "Ferry Boat", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Saliba.jpg"},
     { "embarcação": "São Francisco I", "cidade": "Guapé", "tipo": "Ferry Boat", "motor bb": "MWM 229/6", "reversor bb": "ZF BW 40", "motor be": "MWM 229/6", "reversor be": "ZF BW 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/S%C3%A3o%20Francisco%20I.jpg"},
     { "embarcação": "São Francisco III", "cidade": "Campo do Meio", "tipo": "Ferry Boat", "motor bb": "Mercedes-Benz OM 352", "reversor bb": "ZF BW 40", "motor be": "Mercedes-Benz OM 352", "reversor be": "ZF BW 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/S%C3%A3o%20Francisco%20III.jpg"},
-
     ];
 
     const elements = {
-    furnas: document.getElementById('furnas-container'), mascarenhas: document.getElementById('mascarenhas-container'),
+    furnas: document.getElementById('furnas-container'), 
+    mascarenhas: document.getElementById('mascarenhas-container'),
     modal: new bootstrap.Modal(document.getElementById('vesselDetailsModal')),
     img: document.getElementById('modalVesselImage'), name: document.getElementById('modalVesselName'), city: document.getElementById('modalVesselCity'), 
     motorStatusBE: document.getElementById('modalMotorStatusBE'), motorStatusBB: document.getElementById('modalMotorStatusBB'),
@@ -472,12 +488,10 @@
     elements.pranchaInfo.style.display = 'none';
     elements.componentStatus.style.display = 'block';
     elements.technicalInfo.style.display = 'block';
-
     elements.motorStatusBE.textContent = getProp(vessel, 'motor be') || 'N/A';
     elements.motorStatusBB.textContent = getProp(vessel, 'motor bb') || 'N/A';
     elements.reversorStatusBE.textContent = getProp(vessel, 'reversor be') || 'N/A';
     elements.reversorStatusBB.textContent = getProp(vessel, 'reversor bb') || 'N/A';
-    
     elements.motorInfo.textContent = getProp(vessel, 'motorInfo') || 'Não especificado';
     elements.reversorInfo.textContent = getProp(vessel, 'reversorInfo') || 'Não especificado';
     }
@@ -486,8 +500,12 @@
     }));
     }
 
-    // --- MÓDULO DO CRONOGRAMA ---
-    function initCronogramaModule() {
+    // --- MÓDULO DO CRONOGRAMA (SOLUÇÃO DEFINITIVA) ---
+    window.initCronogramaModule = async function() {
+    const scheduleContainer = document.getElementById('cronograma-section');
+    if (scheduleContainer.dataset.initialized) return;
+    scheduleContainer.dataset.initialized = 'true';
+
     let currentDate = new Date();
     const weekRangeEl = document.getElementById('schedule-week-range');
     const tableHeadEl = document.getElementById('schedule-table-head');
@@ -495,29 +513,112 @@
     const prevBtn = document.getElementById('prev-week-btn');
     const nextBtn = document.getElementById('next-week-btn');
     const locale = 'pt-BR';
+    
+    // ### PASSO 1: URL CORRETA DA PLANILHA (3 COLUNAS) ###
+    // Este é o link para a planilha com a estrutura da imagem (data, titulo, descricao)
+    const scheduleApiUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTu9skDnnYmILUpQ4UvWblPFbq1D4k7Dy4FPK5k-21kgAurdYAJbxyXhbofQGUDHwSefc6w18tDOqPj/pub?gid=502983351&single=true&output=csv';
+    let allScheduleData = [];
 
-    const scheduleData = [
-    { date: '2025-10-27', id: 'RS-2025-078', vessel: 'N. S. Navegantes VII', technician: 'Carlos', color: 'carlos', title: 'Reparo no eixo de propulsão BB' },
-    { date: '2025-10-28', id: 'RS-2025-078', vessel: 'N. S. Navegantes VII', technician: 'Carlos', color: 'carlos', title: 'Continuação do reparo no eixo' },
-    { date: '2025-10-27', id: 'RS-2025-077', vessel: 'Delfinopolis I', technician: 'Juliana', color: 'juliana', title: 'Troca de baterias' },
-    { date: '2025-10-29', id: 'RS-2025-079', vessel: 'Rio Grande IV', technician: 'Fernando', color: 'fernando', title: 'Manutenção preventiva no motor' },
-    { date: '2025-10-30', id: 'RS-2025-080', vessel: 'Canastra', technician: 'Carlos', color: 'carlos', title: 'Inspeção geral do sistema elétrico' },
-    ];
+    const technicianColors = {
+    'CARLOS': 'carlos',
+    'JULIANA': 'juliana',
+    'FERNANDO': 'fernando',
+    'EDGAR': 'carlos', // Mapeando Edgar para a cor 'carlos'
+    };
+
+    function parseCsvLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"' && (i === 0 || line[i-1] !== '\\')) {
+    inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+    result.push(current.trim());
+    current = '';
+    } else {
+    current += char;
+    }
+    }
+    result.push(current.trim());
+    return result.map(val => val.startsWith('"') && val.endsWith('"') ? val.slice(1, -1).replace(/""/g, '"') : val);
+    }
+
+    async function fetchScheduleData() {
+    try {
+    const response = await fetch(`${scheduleApiUrl}&t=${new Date().getTime()}`);
+    if (!response.ok) throw new Error(`Falha na busca dos dados (código: ${response.status})`);
+
+    const csvText = await response.text();
+    const lines = csvText.trim().replace(/\r/g, "").split('\n').slice(1);
+
+    allScheduleData = lines.map(line => {
+    const columns = parseCsvLine(line);
+    
+    // ### PASSO 2: LÓGICA DE LEITURA PARA 3 COLUNAS ###
+    if (columns.length < 3) return null;
+    
+    const [dateStr, title, description] = columns;
+    
+    if (!dateStr || !title) return null;
+
+    const dateParts = dateStr.split('/');
+    if (dateParts.length !== 3) return null;
+    
+    const isoDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+    
+    // ### PASSO 3: EXTRAÇÃO INTELIGENTE DO RESPONSÁVEL E COR ###
+    let technician = '';
+    let color = 'default';
+    const technicianMatch = description.match(/\(([^)]+)\)/);
+    if (technicianMatch) {
+    technician = technicianMatch[1]; // Pega o texto de dentro dos parênteses
+    const upperTech = technician.toUpperCase().split(',')[0]; // Pega só o primeiro nome se tiver vários
+    color = technicianColors[upperTech] || 'default';
+    }
+
+    return {
+    date: isoDate,
+    title: title,
+    description: description,
+    technician: technician,
+    color: color
+    };
+    }).filter(Boolean);
+    
+    } catch (error) {
+    console.error("Erro no Cronograma:", error);
+    tableBodyEl.innerHTML = `<tr><td colspan="7" class="text-center p-5"><div class="alert alert-danger mx-3"><strong>Erro ao carregar agenda:</strong> ${error.message}</div></td></tr>`;
+    weekRangeEl.textContent = 'Erro ao carregar';
+    }
+    }
 
     function renderCalendarEvents(startDate) {
     let bodyHtml = '<tr>';
     const tempDate = new Date(startDate);
+    let hasEventsThisWeek = false;
+
     for (let i = 0; i < 7; i++) {
-    const dayString = tempDate.toISOString().split('T')[0];
-    const eventsForDay = scheduleData.filter(event => event.date === dayString);
+    // Mantém a correção de fuso horário, essencial para o Brasil
+    const year = tempDate.getFullYear();
+    const month = String(tempDate.getMonth() + 1).padStart(2, '0');
+    const day = String(tempDate.getDate()).padStart(2, '0');
+    const dayString = `${year}-${month}-${day}`;
+
+    const eventsForDay = allScheduleData.filter(event => event.date === dayString);
+    
     bodyHtml += '<td>';
     if (eventsForDay.length > 0) {
+    hasEventsThisWeek = true;
+    
+    // ### PASSO 4: EXIBIÇÃO CORRETA DOS DADOS EXTRAÍDOS ###
     eventsForDay.forEach(event => {
     bodyHtml += `
-    <div class="schedule-event event-${event.color}" data-bs-toggle="tooltip" title="${event.id}: ${event.title}">
-    <span class="event-title">${event.id}</span>
-    <span class="event-details">${event.vessel}</span>
-    <span class="event-details event-technician"><i class="bi bi-person-fill"></i> ${event.technician}</span>
+    <div class="schedule-event event-${event.color}" data-bs-toggle="tooltip" title="${event.description.replace(/"/g, '&quot;')}">
+    <span class="event-title">${event.title}</span>
+    <span class="event-details">${event.description.split('\n')[0]}</span>
+    ${event.technician ? `<span class="event-details event-technician"><i class="bi bi-person-fill"></i> ${event.technician}</span>` : ''}
     </div>`;
     });
     }
@@ -526,14 +627,18 @@
     }
     bodyHtml += '</tr>';
     tableBodyEl.innerHTML = bodyHtml;
-    [...tableBodyEl.querySelectorAll('[data-bs-toggle="tooltip"]')].map(el => new bootstrap.Tooltip(el));
+
+    if (!hasEventsThisWeek) {
+    tableBodyEl.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">Não há eventos agendados para esta semana.</td></tr>`;
+    }
+
+    [...tableBodyEl.querySelectorAll('[data-bs-toggle="tooltip"]')].forEach(el => new bootstrap.Tooltip(el));
     }
     
     function updateCalendarWeek(date) {
     const dayOfWeek = date.getDay();
     const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-    const startOfWeek = new Date(date);
-    startOfWeek.setDate(diff);
+    const startOfWeek = new Date(date.getFullYear(), date.getMonth(), diff);
 
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
@@ -542,10 +647,10 @@
 
     let headerHtml = '<tr>';
     const tempDateHeader = new Date(startOfWeek);
-    const weekDays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const displayWeekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    
     for (let i = 0; i < 7; i++) {
-    const dayName = weekDays[tempDateHeader.getDay()];
-    headerHtml += `<th>${dayName.substring(0,3)} (${tempDateHeader.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })})</th>`;
+    headerHtml += `<th>${displayWeekDays[i]} (${tempDateHeader.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })})</th>`;
     tempDateHeader.setDate(tempDateHeader.getDate() + 1);
     }
     headerHtml += '</tr>';
@@ -553,6 +658,12 @@
 
     renderCalendarEvents(startOfWeek);
     }
+
+    weekRangeEl.textContent = 'Carregando agenda...';
+    tableBodyEl.innerHTML = `<tr><td colspan="7"><div class="loading-spinner active" style="padding: 4rem 0;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div><p class="mt-3 text-muted">Buscando dados da agenda...</p></div></td></tr>`;
+    
+    await fetchScheduleData();
+    updateCalendarWeek(currentDate);
 
     prevBtn.addEventListener('click', (e) => {
     e.preventDefault();
@@ -565,8 +676,6 @@
     currentDate.setDate(currentDate.getDate() + 7);
     updateCalendarWeek(new Date(currentDate));
     });
-    
-    updateCalendarWeek(currentDate);
     }
     </script>
 </body>
