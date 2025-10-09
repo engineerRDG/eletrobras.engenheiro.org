@@ -305,6 +305,28 @@
     </div>
     </div>
     
+    <div class="modal fade" id="scheduleDetailModal" tabindex="-1" aria-labelledby="scheduleDetailModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="scheduleDetailModalLabel">Detalhes do Serviço</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <h6 id="modalScheduleTitle" class="mb-1 fw-bold"></h6>
+            <p id="modalScheduleDate" class="text-muted small"></p>
+            <p id="modalScheduleDescription"></p>
+            <hr>
+            <div>
+              <p class="mb-2"><strong><i class="bi bi-people-fill"></i> Colaboradores Envolvidos:</strong></p>
+              <div id="modalScheduleTechnicians">
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -517,7 +539,6 @@
     const locale = 'pt-BR';
     
     // ### PASSO 1: URL CORRETA DA PLANILHA (3 COLUNAS) ###
-    // Este é o link para a planilha com a estrutura da imagem (data, titulo, descricao)
     const scheduleApiUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTu9skDnnYmILUpQ4UvWblPFbq1D4k7Dy4FPK5k-21kgAurdYAJbxyXhbofQGUDHwSefc6w18tDOqPj/pub?gid=502983351&single=true&output=csv';
     let allScheduleData = [];
 
@@ -602,7 +623,6 @@
     let hasEventsThisWeek = false;
 
     for (let i = 0; i < 7; i++) {
-    // Mantém a correção de fuso horário, essencial para o Brasil
     const year = tempDate.getFullYear();
     const month = String(tempDate.getMonth() + 1).padStart(2, '0');
     const day = String(tempDate.getDate()).padStart(2, '0');
@@ -614,13 +634,21 @@
     if (eventsForDay.length > 0) {
     hasEventsThisWeek = true;
     
-    // ### PASSO 4: EXIBIÇÃO CORRETA DOS DADOS EXTRAÍDOS ###
+    // ### PASSO 4: EXIBIÇÃO CORRETA E PREPARAÇÃO PARA O MODAL (ALTERADO) ###
     eventsForDay.forEach(event => {
+    const eventDate = new Date(event.date + 'T12:00:00'); // Adiciona hora para evitar problemas de fuso
+    const formattedDate = eventDate.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    
     bodyHtml += `
-    <div class="schedule-event event-${event.color}" data-bs-toggle="tooltip" title="${event.description.replace(/"/g, '&quot;')}">
-    <span class="event-title">${event.title}</span>
-    <span class="event-details">${event.description.split('\n')[0]}</span>
-    ${event.technician ? `<span class="event-details event-technician"><i class="bi bi-person-fill"></i> ${event.technician}</span>` : ''}
+    <div class="schedule-event event-${event.color}"
+        data-bs-toggle="modal" 
+        data-bs-target="#scheduleDetailModal"
+        data-title="${event.title.replace(/"/g, '&quot;')}"
+        data-date="${formattedDate}"
+        data-description="${event.description.replace(/"/g, '&quot;')}"
+        data-technicians="${event.technician.replace(/"/g, '&quot;')}">
+        <span class="event-title">${event.title}</span>
+        <span class="event-details">${event.description.split('\n')[0].split('(')[0].trim()}</span>
     </div>`;
     });
     }
@@ -633,8 +661,6 @@
     if (!hasEventsThisWeek) {
     tableBodyEl.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">Não há eventos agendados para esta semana.</td></tr>`;
     }
-
-    [...tableBodyEl.querySelectorAll('[data-bs-toggle="tooltip"]')].forEach(el => new bootstrap.Tooltip(el));
     }
     
     function updateCalendarWeek(date) {
@@ -678,6 +704,46 @@
     currentDate.setDate(currentDate.getDate() + 7);
     updateCalendarWeek(new Date(currentDate));
     });
+
+    // ### LÓGICA DO MODAL (NOVO) ###
+    const scheduleDetailModal = document.getElementById('scheduleDetailModal');
+    if (scheduleDetailModal) {
+        scheduleDetailModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget; // O card do evento que foi clicado
+
+            const title = button.getAttribute('data-title');
+            const date = button.getAttribute('data-date');
+            const description = button.getAttribute('data-description');
+            const technicians = button.getAttribute('data-technicians');
+
+            const modalTitle = scheduleDetailModal.querySelector('#modalScheduleTitle');
+            const modalDate = scheduleDetailModal.querySelector('#modalScheduleDate');
+            const modalDescription = scheduleDetailModal.querySelector('#modalScheduleDescription');
+            const modalTechniciansContainer = scheduleDetailModal.querySelector('#modalScheduleTechnicians');
+
+            modalTitle.textContent = title;
+            modalDate.textContent = date;
+            // Mostra a descrição principal sem a parte dos nomes entre parênteses
+            modalDescription.textContent = description.split('(')[0].trim();
+
+            if (technicians) {
+                const techList = technicians.split(',').map(name => name.trim());
+                // Cria "badges" para cada nome, o que melhora a visualização
+                modalTechniciansContainer.innerHTML = techList.map(name => 
+                    `<span class="badge bg-secondary me-1 mb-1 fs-6 fw-normal">${name}</span>`
+                ).join('');
+            } else {
+                // Mensagem padrão se não encontrar colaboradores
+                modalTechniciansContainer.innerHTML = `
+                <div class="alert alert-warning d-flex align-items-center p-2" role="alert">
+                  <i class="bi bi-info-circle-fill me-2"></i>
+                  <div style="font-size: 0.9rem;">
+                    Carregando...
+                  </div>
+                </div>`;
+            }
+        });
+    }
     }
     </script>
 </body>
