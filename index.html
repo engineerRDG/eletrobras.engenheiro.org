@@ -144,10 +144,9 @@
     .event-title { font-weight: bold; display: block; }
     .event-details { font-size: 0.9em; display: block; margin-top: 4px; }
     .event-technician { font-style: italic; }
-    .event-carlos { background-color: #198754; } .event-carlos:hover { background-color: #157347; }
-    .event-juliana { background-color: #dc3545; } .event-juliana:hover { background-color: #b02a37; }
-    .event-fernando { background-color: #ffc107; color: #000; } .event-fernando:hover { background-color: #e0a800; }
-    .event-default { background-color: #404550; } .event-default:hover { background-color: #6b7688; }
+    /* Cores dos eventos foram unificadas no 'event-default' */
+    .event-default { background-color: #404550; } 
+    .event-default:hover { background-color: #6b7688; }
     .schedule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     </style>
 </head>
@@ -315,7 +314,7 @@
           <div class="modal-body">
             <h6 id="modalScheduleTitle" class="mb-1 fw-bold"></h6>
             <p id="modalScheduleDate" class="text-muted small"></p>
-            <p id="modalScheduleDescription"></p>
+            <div id="modalScheduleDescription"></div>
             <hr>
             <div>
               <p class="mb-2"><strong><i class="bi bi-people-fill"></i> Colaboradores Envolvidos:</strong></p>
@@ -524,226 +523,241 @@
     }));
     }
 
-    // --- MÓDULO DO CRONOGRAMA (SOLUÇÃO DEFINITIVA) ---
+    // --- MÓDULO DO CRONOGRAMA (VERSÃO COM MELHORIAS) ---
     window.initCronogramaModule = async function() {
-    const scheduleContainer = document.getElementById('cronograma-section');
-    if (scheduleContainer.dataset.initialized) return;
-    scheduleContainer.dataset.initialized = 'true';
-
-    let currentDate = new Date();
-    const weekRangeEl = document.getElementById('schedule-week-range');
-    const tableHeadEl = document.getElementById('schedule-table-head');
-    const tableBodyEl = document.getElementById('schedule-table-body');
-    const prevBtn = document.getElementById('prev-week-btn');
-    const nextBtn = document.getElementById('next-week-btn');
-    const locale = 'pt-BR';
+        const scheduleContainer = document.getElementById('cronograma-section');
+        if (scheduleContainer.dataset.initialized) return;
+        scheduleContainer.dataset.initialized = 'true';
     
-    // ### PASSO 1: URL CORRETA DA PLANILHA (3 COLUNAS) ###
-    const scheduleApiUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTu9skDnnYmILUpQ4UvWblPFbq1D4k7Dy4FPK5k-21kgAurdYAJbxyXhbofQGUDHwSefc6w18tDOqPj/pub?gid=502983351&single=true&output=csv';
-    let allScheduleData = [];
-
-    const technicianColors = {
-    'CARLOS': 'carlos',
-    'JULIANA': 'juliana',
-    'FERNANDO': 'fernando',
-    'EDGAR': 'carlos', // Mapeando Edgar para a cor 'carlos'
-    };
-
-    function parseCsvLine(line) {
-    const result = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"' && (i === 0 || line[i-1] !== '\\')) {
-    inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
-    result.push(current.trim());
-    current = '';
-    } else {
-    current += char;
-    }
-    }
-    result.push(current.trim());
-    return result.map(val => val.startsWith('"') && val.endsWith('"') ? val.slice(1, -1).replace(/""/g, '"') : val);
-    }
-
-    async function fetchScheduleData() {
-    try {
-    const response = await fetch(`${scheduleApiUrl}&t=${new Date().getTime()}`);
-    if (!response.ok) throw new Error(`Falha na busca dos dados (código: ${response.status})`);
-
-    const csvText = await response.text();
-    const lines = csvText.trim().replace(/\r/g, "").split('\n').slice(1);
-
-    allScheduleData = lines.map(line => {
-    const columns = parseCsvLine(line);
+        let currentDate = new Date();
+        const weekRangeEl = document.getElementById('schedule-week-range');
+        const tableHeadEl = document.getElementById('schedule-table-head');
+        const tableBodyEl = document.getElementById('schedule-table-body');
+        const prevBtn = document.getElementById('prev-week-btn');
+        const nextBtn = document.getElementById('next-week-btn');
+        const locale = 'pt-BR';
     
-    // ### PASSO 2: LÓGICA DE LEITURA PARA 3 COLUNAS ###
-    if (columns.length < 3) return null;
+        // Mapeamento de técnicos para suas funções
+        const technicianRoles = {
+            'Edgar': 'Mecânico', 'Wellington': 'Mecânico', 'Francisco': 'Mecânico', 'Winter': 'Mecânico',
+            'Iago': 'Eletricista', 'Cristhian': 'Eletricista', 'Damião': 'Eletricista',
+            'Rafael': 'Soldador', 'Vital': 'Soldador',
+            'Moisés': 'Preposto',
+            'Rodrigo': 'Engenheiro Mecânico', 'Micael': 'Engenheiro Mecânico',
+            'Marcos': 'Técnico de Segurança do Trabalho'
+        };
     
-    const [dateStr, title, description] = columns;
+        const scheduleApiUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTu9skDnnYmILUpQ4UvWblPFbq1D4k7Dy4FPK5k-21kgAurdYAJbxyXhbofQGUDHwSefc6w18tDOqPj/pub?gid=502983351&single=true&output=csv';
+        let allScheduleData = [];
     
-    if (!dateStr || !title) return null;
-
-    const dateParts = dateStr.split('/');
-    if (dateParts.length !== 3) return null;
-    
-    const isoDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
-    
-    // ### PASSO 3: EXTRAÇÃO INTELIGENTE DO RESPONSÁVEL E COR ###
-    let technician = '';
-    let color = 'default';
-    const technicianMatch = description.match(/\(([^)]+)\)/);
-    if (technicianMatch) {
-    technician = technicianMatch[1]; // Pega o texto de dentro dos parênteses
-    const upperTech = technician.toUpperCase().split(',')[0]; // Pega só o primeiro nome se tiver vários
-    color = technicianColors[upperTech] || 'default';
-    }
-
-    return {
-    date: isoDate,
-    title: title,
-    description: description,
-    technician: technician,
-    color: color
-    };
-    }).filter(Boolean);
-    
-    } catch (error) {
-    console.error("Erro no Cronograma:", error);
-    tableBodyEl.innerHTML = `<tr><td colspan="7" class="text-center p-5"><div class="alert alert-danger mx-3"><strong>Erro ao carregar agenda:</strong> ${error.message}</div></td></tr>`;
-    weekRangeEl.textContent = 'Erro ao carregar';
-    }
-    }
-
-    function renderCalendarEvents(startDate) {
-    let bodyHtml = '<tr>';
-    const tempDate = new Date(startDate);
-    let hasEventsThisWeek = false;
-
-    for (let i = 0; i < 7; i++) {
-    const year = tempDate.getFullYear();
-    const month = String(tempDate.getMonth() + 1).padStart(2, '0');
-    const day = String(tempDate.getDate()).padStart(2, '0');
-    const dayString = `${year}-${month}-${day}`;
-
-    const eventsForDay = allScheduleData.filter(event => event.date === dayString);
-    
-    bodyHtml += '<td>';
-    if (eventsForDay.length > 0) {
-    hasEventsThisWeek = true;
-    
-    // ### PASSO 4: EXIBIÇÃO CORRETA E PREPARAÇÃO PARA O MODAL (ALTERADO) ###
-    eventsForDay.forEach(event => {
-    const eventDate = new Date(event.date + 'T12:00:00'); // Adiciona hora para evitar problemas de fuso
-    const formattedDate = eventDate.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    
-    bodyHtml += `
-    <div class="schedule-event event-${event.color}"
-        data-bs-toggle="modal" 
-        data-bs-target="#scheduleDetailModal"
-        data-title="${event.title.replace(/"/g, '&quot;')}"
-        data-date="${formattedDate}"
-        data-description="${event.description.replace(/"/g, '&quot;')}"
-        data-technicians="${event.technician.replace(/"/g, '&quot;')}">
-        <span class="event-title">${event.title}</span>
-        <span class="event-details">${event.description.split('\n')[0].split('(')[0].trim()}</span>
-    </div>`;
-    });
-    }
-    bodyHtml += '</td>';
-    tempDate.setDate(tempDate.getDate() + 1);
-    }
-    bodyHtml += '</tr>';
-    tableBodyEl.innerHTML = bodyHtml;
-
-    if (!hasEventsThisWeek) {
-    tableBodyEl.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">Não há eventos agendados para esta semana.</td></tr>`;
-    }
-    }
-    
-    function updateCalendarWeek(date) {
-    const dayOfWeek = date.getDay();
-    const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-    const startOfWeek = new Date(date.getFullYear(), date.getMonth(), diff);
-
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-    weekRangeEl.textContent = `Semana: ${startOfWeek.toLocaleDateString(locale, { day: '2-digit', month: 'long' })} - ${endOfWeek.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' })}`;
-
-    let headerHtml = '<tr>';
-    const tempDateHeader = new Date(startOfWeek);
-    const displayWeekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-    
-    for (let i = 0; i < 7; i++) {
-    headerHtml += `<th>${displayWeekDays[i]} (${tempDateHeader.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })})</th>`;
-    tempDateHeader.setDate(tempDateHeader.getDate() + 1);
-    }
-    headerHtml += '</tr>';
-    tableHeadEl.innerHTML = headerHtml;
-
-    renderCalendarEvents(startOfWeek);
-    }
-
-    weekRangeEl.textContent = 'Carregando agenda...';
-    tableBodyEl.innerHTML = `<tr><td colspan="7"><div class="loading-spinner active" style="padding: 4rem 0;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div><p class="mt-3 text-muted">Buscando dados da agenda...</p></div></td></tr>`;
-    
-    await fetchScheduleData();
-    updateCalendarWeek(currentDate);
-
-    prevBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    currentDate.setDate(currentDate.getDate() - 7);
-    updateCalendarWeek(new Date(currentDate));
-    });
-
-    nextBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    currentDate.setDate(currentDate.getDate() + 7);
-    updateCalendarWeek(new Date(currentDate));
-    });
-
-    // ### LÓGICA DO MODAL (NOVO) ###
-    const scheduleDetailModal = document.getElementById('scheduleDetailModal');
-    if (scheduleDetailModal) {
-        scheduleDetailModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget; // O card do evento que foi clicado
-
-            const title = button.getAttribute('data-title');
-            const date = button.getAttribute('data-date');
-            const description = button.getAttribute('data-description');
-            const technicians = button.getAttribute('data-technicians');
-
-            const modalTitle = scheduleDetailModal.querySelector('#modalScheduleTitle');
-            const modalDate = scheduleDetailModal.querySelector('#modalScheduleDate');
-            const modalDescription = scheduleDetailModal.querySelector('#modalScheduleDescription');
-            const modalTechniciansContainer = scheduleDetailModal.querySelector('#modalScheduleTechnicians');
-
-            modalTitle.textContent = title;
-            modalDate.textContent = date;
-            // Mostra a descrição principal sem a parte dos nomes entre parênteses
-            modalDescription.textContent = description.split('(')[0].trim();
-
-            if (technicians) {
-                const techList = technicians.split(',').map(name => name.trim());
-                // Cria "badges" para cada nome, o que melhora a visualização
-                modalTechniciansContainer.innerHTML = techList.map(name => 
-                    `<span class="badge bg-secondary me-1 mb-1 fs-6 fw-normal">${name}</span>`
-                ).join('');
-            } else {
-                // Mensagem padrão se não encontrar colaboradores
-                modalTechniciansContainer.innerHTML = `
-                <div class="alert alert-warning d-flex align-items-center p-2" role="alert">
-                  <i class="bi bi-info-circle-fill me-2"></i>
-                  <div style="font-size: 0.9rem;">
-                    Carregando...
-                  </div>
-                </div>`;
+        function parseCsvLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"' && (i === 0 || line[i-1] !== '\\')) {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
             }
+            result.push(current.trim());
+            return result.map(val => val.startsWith('"') && val.endsWith('"') ? val.slice(1, -1).replace(/""/g, '"') : val);
+        }
+    
+        async function fetchScheduleData() {
+            try {
+                const response = await fetch(`${scheduleApiUrl}&t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error(`Falha na busca dos dados (código: ${response.status})`);
+    
+                const csvText = await response.text();
+                const lines = csvText.trim().replace(/\r/g, "").split('\n').slice(1);
+    
+                allScheduleData = lines.map(line => {
+                    const columns = parseCsvLine(line);
+                    
+                    if (columns.length < 4) return null; 
+                    
+                    const [dateStr, title, description, technician] = columns;
+                    
+                    if (!dateStr || !title) return null;
+    
+                    const dateParts = dateStr.split('/');
+                    if (dateParts.length !== 3) return null;
+                    
+                    const isoDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+                    
+                    // Cor padrão para todos os eventos
+                    const color = 'default';
+    
+                    return {
+                        date: isoDate,
+                        title: title,
+                        description: description,
+                        technician: technician,
+                        color: color
+                    };
+                }).filter(Boolean);
+            
+            } catch (error) {
+                console.error("Erro no Cronograma:", error);
+                tableBodyEl.innerHTML = `<tr><td colspan="7" class="text-center p-5"><div class="alert alert-danger mx-3"><strong>Erro ao carregar agenda:</strong> ${error.message}</div></td></tr>`;
+                weekRangeEl.textContent = 'Erro ao carregar';
+            }
+        }
+    
+        function renderCalendarEvents(startDate) {
+            let bodyHtml = '<tr>';
+            const tempDate = new Date(startDate);
+            let hasEventsThisWeek = false;
+    
+            for (let i = 0; i < 7; i++) {
+                const year = tempDate.getFullYear();
+                const month = String(tempDate.getMonth() + 1).padStart(2, '0');
+                const day = String(tempDate.getDate()).padStart(2, '0');
+                const dayString = `${year}-${month}-${day}`;
+    
+                const eventsForDay = allScheduleData.filter(event => event.date === dayString);
+                
+                bodyHtml += '<td>';
+                if (eventsForDay.length > 0) {
+                    hasEventsThisWeek = true;
+                    
+                    eventsForDay.forEach(event => {
+                        const eventDate = new Date(event.date + 'T12:00:00');
+                        const formattedDate = eventDate.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                        
+                        bodyHtml += `
+                        <div class="schedule-event event-${event.color}"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#scheduleDetailModal"
+                            data-title="${event.title.replace(/"/g, '&quot;')}"
+                            data-date="${formattedDate}"
+                            data-description="${event.description.replace(/"/g, '&quot;')}"
+                            data-technicians="${(event.technician || '').replace(/"/g, '&quot;')}">
+                            <span class="event-title">${event.title}</span>
+                            <span class="event-details">${event.description.split(';')[0].trim()}</span>
+                        </div>`;
+                    });
+                }
+                bodyHtml += '</td>';
+                tempDate.setDate(tempDate.getDate() + 1);
+            }
+            bodyHtml += '</tr>';
+            tableBodyEl.innerHTML = bodyHtml;
+    
+            if (!hasEventsThisWeek) {
+                tableBodyEl.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">Não há eventos agendados para esta semana.</td></tr>`;
+            }
+        }
+        
+        function updateCalendarWeek(date) {
+            const dayOfWeek = date.getDay();
+            const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+            const startOfWeek = new Date(date.getFullYear(), date.getMonth(), diff);
+    
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+    
+            weekRangeEl.textContent = `Semana: ${startOfWeek.toLocaleDateString(locale, { day: '2-digit', month: 'long' })} - ${endOfWeek.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' })}`;
+    
+            let headerHtml = '<tr>';
+            const tempDateHeader = new Date(startOfWeek);
+            const displayWeekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+            
+            for (let i = 0; i < 7; i++) {
+                headerHtml += `<th>${displayWeekDays[i]} (${tempDateHeader.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })})</th>`;
+                tempDateHeader.setDate(tempDateHeader.getDate() + 1);
+            }
+            headerHtml += '</tr>';
+            tableHeadEl.innerHTML = headerHtml;
+    
+            renderCalendarEvents(startOfWeek);
+        }
+    
+        weekRangeEl.textContent = 'Carregando agenda...';
+        tableBodyEl.innerHTML = `<tr><td colspan="7"><div class="loading-spinner active" style="padding: 4rem 0;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div><p class="mt-3 text-muted">Buscando dados da agenda...</p></div></td></tr>`;
+        
+        await fetchScheduleData();
+        updateCalendarWeek(currentDate);
+    
+        prevBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentDate.setDate(currentDate.getDate() - 7);
+            updateCalendarWeek(new Date(currentDate));
         });
-    }
+    
+        nextBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentDate.setDate(currentDate.getDate() + 7);
+            updateCalendarWeek(new Date(currentDate));
+        });
+    
+        const scheduleDetailModal = document.getElementById('scheduleDetailModal');
+        if (scheduleDetailModal) {
+            scheduleDetailModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+    
+                const title = button.getAttribute('data-title');
+                const date = button.getAttribute('data-date');
+                const description = button.getAttribute('data-description');
+                const technicians = button.getAttribute('data-technicians');
+    
+                const modalTitle = scheduleDetailModal.querySelector('#modalScheduleTitle');
+                const modalDate = scheduleDetailModal.querySelector('#modalScheduleDate');
+                const modalDescription = scheduleDetailModal.querySelector('#modalScheduleDescription');
+                const modalTechniciansContainer = scheduleDetailModal.querySelector('#modalScheduleTechnicians');
+    
+                modalTitle.textContent = title;
+                modalDate.textContent = date;
+                
+                // Trata múltiplas descrições de serviço
+                const descriptionItems = description.split(';').map(item => item.trim()).filter(item => item);
+                if (descriptionItems.length > 1) {
+                    let descHtml = '<ul class="list-group list-group-flush ps-0">';
+                    descriptionItems.forEach(item => {
+                        descHtml += `<li class="list-group-item px-0 border-0"><i class="bi bi-tools text-primary me-2"></i>${item}</li>`;
+                    });
+                    descHtml += '</ul>';
+                    modalDescription.innerHTML = descHtml;
+                } else {
+                    modalDescription.innerHTML = `<p>${description}</p>`;
+                }
+
+                // Agrupa, ordena e exibe os técnicos
+                if (technicians && technicians.trim() !== '') {
+                    const techList = technicians.split(',').map(name => name.trim());
+                    const groupedByRole = {};
+
+                    techList.forEach(name => {
+                        const role = technicianRoles[name] || 'Outros';
+                        if (!groupedByRole[role]) {
+                            groupedByRole[role] = [];
+                        }
+                        groupedByRole[role].push(name);
+                    });
+
+                    const sortedRoles = Object.keys(groupedByRole).sort();
+                    let finalHtml = '';
+
+                    sortedRoles.forEach(role => {
+                        finalHtml += `<p class="mb-1 mt-2"><strong>${role}</strong></p><ul class="list-group list-group-flush mb-2">`;
+                        const sortedNames = groupedByRole[role].sort();
+                        sortedNames.forEach(name => {
+                            finalHtml += `<li class="list-group-item py-1 px-0 border-0">${name}</li>`;
+                        });
+                        finalHtml += `</ul>`;
+                    });
+                    modalTechniciansContainer.innerHTML = finalHtml;
+                } else {
+                    modalTechniciansContainer.innerHTML = '<p class="text-muted fst-italic">Nenhum técnico atribuído.</p>';
+                }
+            });
+        }
     }
     </script>
 </body>
