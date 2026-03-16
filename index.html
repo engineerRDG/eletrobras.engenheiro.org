@@ -1,764 +1,695 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle Operacional - Vilhena Serviços</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <title>Vilhena Servicos - Controle Operacional</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-    /* Estilos Gerais */
-    body {
-    background-color: #f0f2f5;
-    color: #343a40;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    }
-    main {
-    flex-grow: 1;
-    }
-    .navbar-brand img, .footer-logo {
-    height: 40px;
-    width: auto;
-    }
-    .page-title {
-    font-weight: 700;
-    color: #343a40;
-    }
-    .content-section {
-    display: none;
-    }
-    .content-section.active {
-    display: block;
-    }
+        :root {
+            --bg: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --accent: #0f172a;
+            --success: #16a34a;
+            --warning: #ea580c;
+            --danger: #dc2626;
+            --info: #2563eb;
+            --bg-alt: #f8fafc;
+        }
 
-    /* Cartões de Navegação */
-    .nav-card {
-    background-color: #ffff;
-    border: 2px solid transparent;
-    border-radius: .5rem;
-    box-shadow: 0 .15rem 1.75rem 0 rgba(58,59,69,.15);
-    transition: all 0.2s ease-in-out;
-    text-decoration: none;
-    color: inherit;
-    height: 100%;
-    }
-    .nav-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
-    }
-    .nav-card.active {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .25);
-    }
-    .nav-card .card-body { 
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 170px;
-    }
-    .nav-card-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
-    .nav-card-icon svg {
-    width: 2.5rem;
-    height: 2.5rem;
-    }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
 
-    .nav-card-title { font-weight: 700; font-size: 1.1rem; }
+        /* Utils */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; width: 100%; flex: 1; }
+        .flex { display: flex; align-items: center; gap: 0.5rem; }
+        .sb { justify-content: space-between; }
+        .text-muted { color: var(--muted); }
+        .text-sm { font-size: 0.75rem; }
+        .text-xs { font-size: 0.65rem; }
+        .bold { font-weight: 700; }
+        .hidden { display: none !important; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mt-2 { margin-top: 1rem; }
+        .grid { display: grid; gap: 1rem; }
+        .g3 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+        .g4 { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 
-    /* --- Estilos da Seção STATUS --- */
-    .status-card {
-    border: 1px solid #dee2e6;
-    border-left-width: 5px;
-    border-radius: .35rem;
-    box-shadow: 0 .15rem 1.75rem 0 rgba(58,59,69,.15);
-    background-color: #ffff;
-    display: flex; flex-direction: column;
-    }
-    .status-card .card-body { padding: 1.5rem; display: flex; flex-direction: column; flex-grow: 1; justify-content: center; }
-    .status-content { text-align: center; }
-    .status-title { font-weight: 700; font-size: 1.1rem; text-transform: uppercase; margin-bottom: 0.5rem; }
-    .status-text { font-size: 1.6rem; font-weight: 700; margin: 0.5rem 0; }
-    .status-condition { font-size: 1.1rem; font-weight: 500; color: #6c757d; margin-bottom: 0.5rem; }
-    .status-operando { border-left-color: #28a745; }
-    .status-disponivel { border-left-color: #17a2b8; }
-    .status-manutencao { border-left-color: #dc3545; }
-    .status-paralisada { border-left-color: #6c757d; }
-    .loading-spinner { display: none; text-align: center; padding: 2rem; }
-    .loading-spinner.active { display: block; }
-    
-    /* --- Estilos da Seção FROTA --- */
-    .reservoir-title { border-bottom: 2px solid; padding-bottom: 0.5rem; }
-    .vessel-card {
-    border: 1px solid #dee2e6;
-    border-left: 5px solid;
-    border-radius: .35rem;
-    box-shadow: 0 .15rem 1.75rem 0 rgba(58,59,69,.15);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    background-color: #ffff;
-    cursor: pointer;
-    display: flex; flex-direction: column;
-    justify-content: center; align-items: center;
-    padding: 1rem; min-height: 140px;
-    text-align: center;
-    }
-    .vessel-card:hover { transform: translateY(-5px); }
-    .vessel-card .card-title { font-weight: 700; font-size: 1.1rem; color: #343a40; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 8px; }
-    .vessel-card .card-title i { color: #6c757d; }
-    .vessel-card .card-city { font-size: 0.9rem; color: #6c757d; }
-    .vessel-card .card-type { font-size: 0.8rem; font-weight: 600; color: #0d6efd; margin-top: 5px; }
-    .reservoir-title-furnas { border-bottom-color: #198754; color: #198754; }
-    .vessel-card-furnas { border-left-color: #198754; }
-    .vessel-card-furnas:hover { box-shadow: 0 .5rem 1rem rgba(25, 135, 84, .25); }
-    .reservoir-title-mascarenhas { border-bottom-color: #0d6efd; color: #0d6efd; }
-    .vessel-card-mascarenhas { border-left-color: #0d6efd; }
-    .vessel-card-mascarenhas:hover { box-shadow: 0 .5rem 1rem rgba(13, 110, 253, .25); }
-    .modal-vessel-image {
-    max-width: 100%;
-    height: auto;
-    max-height: 220px;
-    border-radius: .25rem;
-    object-fit: cover;
-    margin-bottom: 1.5rem;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    }
+        /* Header */
+        header { position: sticky; top: 0; background: var(--bg); border-bottom: 1px solid var(--border); z-index: 100; }
+        .hd-content { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0; }
+        .logo { height: 28px; opacity: 0.9; }
+        
+        /* Menu */
+        .menu-btn { background: none; border: none; cursor: pointer; padding: 0.5rem; display: flex; flex-direction: column; gap: 5px; }
+        .menu-btn span { display: block; width: 24px; height: 2px; background: var(--text); transition: 0.3s; }
+        .menu-btn.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+        .menu-btn.active span:nth-child(2) { opacity: 0; }
+        .menu-btn.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
 
-    /* --- Estilos da Seção CRONOGRAMA --- */
-    .schedule-container {
-    background-color: white;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    overflow: hidden; padding: 1.5rem;
-    }
-    .schedule-table { width: 100%; border-collapse: collapse; }
-    .schedule-table th, .schedule-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; vertical-align: top; }
-    .schedule-table thead th { background-color: #191c1f; color: #ffff; padding: 12px; }
-    .schedule-table tbody td { min-height: 150px; }
-    .schedule-event { color: white; padding: 8px; border-radius: 6px; margin-bottom: 8px; text-align: left; font-size: 0.9em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: background-color 0.2s ease; }
-    .event-title { font-weight: bold; display: block; }
-    .event-details { font-size: 0.9em; display: block; margin-top: 4px; }
-    .event-technician { font-style: italic; }
-    /* Cores dos eventos foram unificadas no 'event-default' */
-    .event-default { background-color: #404550; } 
-    .event-default:hover { background-color: #6b7688; }
-    .schedule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .slide-menu {
+            position: fixed; top: 0; left: 0; width: 280px; height: 100%;
+            background: var(--bg); z-index: 200;
+            transform: translateX(-100%); transition: transform 0.3s ease;
+            border-right: 1px solid var(--border); padding: 1.5rem;
+            display: flex; flex-direction: column; gap: 0.5rem;
+        }
+        .slide-menu.open { transform: translateX(0); }
+        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 150; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .menu-overlay.open { opacity: 1; pointer-events: auto; }
+
+        .nav-link { 
+            display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; 
+            border-radius: 4px; text-decoration: none; color: var(--text);
+            font-size: 0.85rem; font-weight: 500; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .nav-link:hover { background: var(--bg-alt); }
+        .nav-link.active { background: var(--text); color: #fff; }
+
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.5rem 1rem; font-family: inherit; font-size: 0.75rem; font-weight: 500; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: var(--card); color: var(--text); transition: 0.2s; }
+        .btn:hover { background: var(--bg-alt); }
+        .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.65rem; }
+        
+        /* Cards */
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .card-body { padding: 1rem; }
+
+        /* Sections */
+        .section { display: none; padding: 0.5rem 0 2rem; }
+        .section.active { display: block; animation: fadeIn 0.3s ease; }
+        .hd { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+
+        /* Forms */
+        .form-group { margin-bottom: 0.5rem; }
+        .form-label { display: block; font-size: 0.7rem; text-transform: uppercase; font-weight: 600; color: var(--muted); margin-bottom: 0.25rem; }
+        .form-input { width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; font-size: 0.8rem; background: #fff; color: var(--text); }
+
+        /* Tables */
+        .table-container { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; margin-top: 1rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        th, td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid var(--border); }
+        thead { background: var(--accent); color: #fff; }
+        thead th { border-bottom: none; font-size: 0.7rem; text-transform: uppercase; }
+        tbody tr:nth-child(even) { background: var(--bg-alt); }
+        tbody tr:hover { background: #f1f5f9; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+
+        /* Status Specifics */
+        .status-group { margin-bottom: 1.5rem; }
+        .status-group-title { 
+            font-size: 0.8rem; font-weight: 700; border-bottom: 2px solid; 
+            padding-bottom: 0.25rem; margin-bottom: 0.75rem; display: block; 
+        }
+        .status-group.operando .status-group-title { border-color: var(--success); color: var(--success); }
+        .status-group.manutencao .status-group-title { border-color: var(--danger); color: var(--danger); }
+        .status-group.disponivel .status-group-title { border-color: var(--info); color: var(--info); }
+        .status-group.paralisada .status-group-title { border-color: var(--muted); color: var(--muted); }
+
+        .status-card { display: flex; flex-direction: column; justify-content: center; padding: 1rem; min-height: 100px; border-left: 4px solid var(--muted); }
+        .status-card.operando { border-left-color: var(--success); }
+        .status-card.manutencao { border-left-color: var(--danger); }
+        .status-card.disponivel { border-left-color: var(--info); }
+        .status-val { font-size: 1rem; font-weight: 700; text-transform: uppercase; }
+        .status-name { font-size: 0.75rem; color: var(--muted); }
+
+        /* Vessel Specifics */
+        .vessel-card { border-left: 4px solid var(--muted); cursor: pointer; }
+        .vessel-card.furnas { border-left-color: #0d6efd; }
+        .vessel-card.mascarenhas { border-left-color: #198754; }
+        .vessel-title { color: var(--muted); font-weight: 700; border-bottom: 2px solid; padding-bottom: 0.25rem; margin-bottom: 0.75rem; font-size: 0.75rem; }
+        .vessel-title.furnas { border-color: #0d6efd; color: #0d6efd; }
+        .vessel-title.mascarenhas { border-color: #198754; color: #198754; }
+
+        /* Calendar */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .calendar-day-name { background: var(--bg-alt); font-weight: 700; font-size: 0.65rem; text-align: center; padding: 0.5rem; border-bottom: 1px solid var(--border); }
+        .calendar-day { 
+            min-height: 100px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); 
+            padding: 0.25rem; position: relative; background: #fff;
+        }
+        .calendar-day:nth-child(7n) { border-right: none; }
+        .calendar-day:nth-last-child(-n+7) { border-bottom: none; }
+        .calendar-day.other-month { background: var(--bg-alt); opacity: 0.5; }
+        .calendar-day.today { background: #f0f9ff; }
+        .day-number { font-size: 0.7rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .cal-event { 
+            background: var(--text); color: #fff; font-size: 0.6rem; 
+            padding: 2px 4px; border-radius: 2px; margin-bottom: 2px; 
+            cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .cal-event:hover { opacity: 0.8; }
+
+        /* Medicao */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; margin-bottom: 1rem; }
+        .kpi-card { text-align: center; padding: 0.5rem; border: 1px solid var(--border); }
+        .kpi-label { font-size: 0.65rem; text-transform: uppercase; color: var(--muted); display: block; }
+        .kpi-value { font-size: 1.1rem; font-weight: 700; }
+        .pareto-chart { height: 200px; position: relative; }
+
+        /* Itens Table - Specific Adjustments */
+        .itens-table { width: 100%; table-layout: auto; }
+        .itens-table th, .itens-table td { padding: 0.5rem; font-size: 0.7rem; }
+        
+        /* Coluna Codigo */
+        .itens-table td:nth-child(1) {
+            font-family: monospace; 
+            font-weight: 700; 
+            white-space: nowrap; 
+            font-size: 0.65rem; 
+            width: 1%; 
+        }
+        
+        /* Coluna Descritivo */
+        .itens-table td:nth-child(2) {
+            white-space: normal;
+            word-break: break-word;
+            width: 70%; 
+        }
+
+        /* Coluna Unidade */
+        .itens-table td:nth-child(3) {
+            text-align: center;
+            white-space: nowrap;
+            width: 1%;
+        }
+
+        /* Coluna Valor */
+        .itens-table td:nth-child(4) {
+            text-align: right; 
+            white-space: nowrap; 
+            font-weight: 600;
+            font-size: 0.65rem; 
+            width: 1%;
+        }
+        
+        .clickable-cell { cursor: pointer; transition: background 0.2s; }
+        .clickable-cell:active { background: #e2e8f0; }
+
+        /* Toast */
+        .copy-toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: var(--text); color: #fff; padding: 8px 16px; border-radius: 4px;
+            font-size: 0.7rem; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 3000;
+        }
+        .copy-toast.show { opacity: 1; }
+
+        /* Modal */
+        .modal-back { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; place-items: center; z-index: 2000; padding: 1rem; }
+        .modal { background: var(--bg); padding: 1.5rem; border-radius: 10px; max-width: 900px; width: 100%; position: relative; max-height: 90vh; overflow-y: auto; }
+        .modal-close { position: absolute; top: 0.5rem; right: 0.5rem; background: none; border: none; cursor: pointer; font-size: 1.5rem; line-height: 1; color: var(--muted); }
+        
+        /* Footer */
+        footer { border-top: 1px solid var(--border); padding: 1.5rem 0; margin-top: auto; }
+        .footer-logo { height: 40px; opacity: 0.6; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-black shadow-sm">
-    <div class="container-fluid d-flex justify-content-between">
-    <a class="navbar-brand" href="#" id="home-link">
-    <img src="https://raw.githubusercontent.com/engineerRDG/vilhena.engenheiro.org/refs/heads/main/imagem/logo.png" alt="Vilhena Serviços Logo">
-    </a>
-    <span class="navbar-text text-white">
-    <b>TC 8000014022</b>
-    </span>
-    </div>
-    </nav>
 
-    <main class="container mt-4">
-
-    <section id="main-menu">
-    <header class="text-center mb-4">
-    <h1 class="page-title">CONTROLE OPERACIONAL</h1>
-    <p class="lead text-muted">Selecione uma opção para visualizar as informações.</p>
-    </header>
-    <div class="row text-center g-4 justify-content-center">
-    <div class="col-lg-3 col-md-5">
-    <a href="#" class="card nav-card" data-target="status-section">
-    <div class="card-body">
-    <div class="nav-card-icon"><i class="bi bi-water"></i></div>
-    <h3 class="nav-card-title">Cássia ⮂ Delfinópolis</h3>
-    </div>
-    </a>
-    </div>
-    <div class="col-lg-3 col-md-5">
-    <a href="#" class="card nav-card" data-target="frota-section">
-    <div class="card-body">
-    <div class="nav-card-icon">
-    <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-    <path d="M12 36h16l4 8H8z" fill="currentColor"></path>
-    <path d="M28 26h16l4 8H24z" fill="currentColor" opacity="0.8"></path>
-    <path d="M44 18h16l4 8H40z" fill="currentColor" opacity="0.6"></path>
-    <path d="M6 48c4 2 8 2 12 0s8-2 12 0 8 2 12 0 8-2 12 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
-    </svg>
-    <span class="visually-hidden">Ícone representando múltiplas embarcações</span>
-    </div>
-    <h3 class="nav-card-title">Embarcações</h3>
-    </div>
-    </a>
-    </div>
-    <div class="col-lg-3 col-md-5">
-    <a href="#" class="card nav-card" data-target="cronograma-section">
-    <div class="card-body">
-    <div class="nav-card-icon"><i class="bi bi-calendar-event-fill"></i></div>
-    <h3 class="nav-card-title">Cronograma de Atendimento</h3>
-    </div>
-    </a>
-    </div>
-    </div>
-    </section>
-
-    <div id="content-container" class="mt-5">
-    <section id="status-section" class="content-section">
-    <header class="d-flex justify-content-end mb-4 pb-2 border-bottom">
-    <div id="sheet-update-info" class="text-muted text-end"></div>
-    </header>
-    <div class="loading-spinner" id="loading-spinner">
-    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div>
-    <p class="mt-3 text-muted">Buscando informações da planilha...</p>
-    </div>
-    <div id="status-container" class="row g-4"></div>
-    </section>
-
-    <section id="frota-section" class="content-section">
-    <div id="frota-container">
-    <section id="furnas-section" class="mb-5">
-    <h2 class="h4 reservoir-title reservoir-title-furnas mb-4">Reservatório da Usina de Furnas</h2>
-    <div id="furnas-container" class="row g-3"></div>
-    </section>
-    <section id="mascarenhas-section" class="mb-5">
-    <h2 class="h4 reservoir-title reservoir-title-mascarenhas mb-4">Reservatório da Usina de Mascarenhas de Moraes</h2>
-    <div id="mascarenhas-container" class="row g-3"></div>
-    </section>
-    </div>
-    </section>
-
-    <section id="cronograma-section" class="content-section">
-    <div class="schedule-container">
-    <div class="schedule-header">
-    <a href="#" class="btn btn-outline-primary" id="prev-week-btn"><i class="bi bi-arrow-left-short"></i> Semana Anterior</a>
-    <h2 class="h4 mb-0 text-center" id="schedule-week-range">Carregando semana...</h2>
-    <a href="#" class="btn btn-outline-primary" id="next-week-btn">Próxima Semana <i class="bi bi-arrow-right-short"></i></a>
-    </div>
-    <div class="table-responsive">
-    <table class="schedule-table">
-    <thead id="schedule-table-head"></thead>
-    <tbody id="schedule-table-body"></tbody>
-    </table>
-    </div>
-    </div>
-    </section>
-    </div>
-    </main>
-    
-    <i href="https://rodrigo.engenheiro.org"><footer class="container mt-5 mb-4 d-flex flex-wrap justify-content-between align-items-center border-top pt-4" href="https://rodrigo.engenheiro.org" >
-    <img src="https://raw.githubusercontent.com/engineerRDG/vilhena.engenheiro.org/refs/heads/main/imagem/eletrobras.png" alt="Logo Eletrobras" class="footer-logo">
-    <div class="text-end" href="https://rodrigo.engenheiro.org">
-    <p class="text-muted mb-1" style="font-size: 0.9rem;"><b>Vilhena Serviços LTDA</b><br>Departamento de Engenharia e Manutenção</p>
-    <p class="text-body-tertiary mb-0" style="font-size: 0.6rem;"><b>Rodrigo M. Araujo</b><br>Engenheiro Mecânico<br>
-    Engenheiro de Segurança do Trabalho
-    <br>
-<b>rodrigo@engenheiro.org</b>
-    <br>
-<b>(91) 98456-5209</b>
-</p>
-    </div>
-    </footer>
-    </i>
-
-    <div class="modal fade" id="vesselDetailsModal" tabindex="-1" aria-labelledby="vesselDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-    <div class="modal-header">
-    <h5 class="modal-title" id="vesselDetailsModalLabel">Detalhes da Embarcação</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-    </div>
-    <div class="modal-body">
-    <div class="text-center mb-4">
-    <h4 id="modalVesselName" class="mb-1 text-primary"></h4>
-    <p id="modalVesselCity" class="text-muted"></p>
-    <img id="modalVesselImage" src="" alt="Imagem da Embarcação" class="modal-vessel-image img-fluid">
-    </div>
-    <div id="modalPranchaInfo" class="alert alert-danger text-center" style="display: none;">
-    Embarcação do tipo Prancha não possui sistema de propulsão
-    </div>
-    <div id="modalComponentStatus" class="details-section text-start mt-4">
-    <h6><i class="bi bi-clipboard-data"></i> Status dos Componentes</h6>
-    <ul class="list-group">
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-    <span><i class="bi bi-gear-fill text-muted"></i> Motores</span>
-    <div><strong id="modalMotorStatusBE">N/A</strong> / <strong id="modalMotorStatusBB">N/A</strong></div>
-    </li>
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-    <span><i class="bi bi-arrow-repeat text-muted"></i> Reversores</span>
-    <div><strong id="modalReversorStatusBE">N/A</strong> / <strong id="modalReversorStatusBB">N/A</strong></div>
-    </li>
-    </ul>
-    </div>
-    <div id="modalTechnicalInfo" class="details-section text-start mt-4">
-    <h6><i class="bi bi-info-circle-fill"></i> Informações Técnicas</h6>
-    <ul class="list-group list-group-flush">
-    <li class="list-group-item"><strong>Motor:</strong> <span id="modalMotorInfo">N/A</span></li>
-    <li class="list-group-item"><strong>Reversor:</strong> <span id="modalReversorInfo">N/A</span></li>
-    </ul>
-    </div>
-    </div>
-    </div>
-    </div>
-    </div>
-    
-    <div class="modal fade" id="scheduleDetailModal" tabindex="-1" aria-labelledby="scheduleDetailModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="scheduleDetailModalLabel">Detalhes do Serviço</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <h6 id="modalScheduleTitle" class="mb-1 fw-bold"></h6>
-            <p id="modalScheduleDate" class="text-muted small"></p>
-            <div id="modalScheduleDescription"></div>
-            <hr>
+<header>
+    <div class="container hd-content">
+        <div class="flex gap-2">
+            <img src="https://raw.githubusercontent.com/engineerRDG/vilhena.engenheiro.org/refs/heads/main/imagem/logo.png" class="logo" alt="Logo">
             <div>
-              <p class="mb-2"><strong><i class="bi bi-people-fill"></i> Colaboradores Envolvidos:</strong></p>
-              <div id="modalScheduleTechnicians">
-                </div>
+                <div class="bold">Vilhena Servicos</div>
+                <div class="text-xs text-muted">TC 8000014022</div>
             </div>
-          </div>
         </div>
-      </div>
+        <button class="menu-btn" id="menuToggle" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
     </div>
+</header>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Overlay -->
+<div class="menu-overlay" id="menuOverlay"></div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-    // --- LÓGICA DE NAVEGAÇÃO GERAL ---
-    const navCards = document.querySelectorAll('.nav-card');
-    const contentSections = document.querySelectorAll('.content-section');
-    const homeLink = document.getElementById('home-link');
+<!-- Menu -->
+<nav class="slide-menu" id="slideMenu">
+    <div style="margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+        <h2 class="bold">Navegacao</h2>
+    </div>
+    <a class="nav-link active" data-target="status"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Status</a>
+    <a class="nav-link" data-target="frota"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Frota</a>
+    <a class="nav-link" data-target="cronograma"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Cronograma</a>
+    <a class="nav-link" data-target="medicao"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg> Medicao</a>
+    <a class="nav-link" data-target="itens"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg> Itens</a>
+</nav>
 
-    function showSection(targetId, clickedCard) {
-    navCards.forEach(card => card.classList.remove('active'));
-    if (clickedCard) clickedCard.classList.add('active');
+<main class="container">
+    <!-- STATUS -->
+    <section id="status" class="section active">
+        <h1 class="hd">Status Operacional</h1>
+        <span class="text-xs text-muted" id="lastUpdateStatus" style="margin-bottom: 1rem; display: block;"></span>
+        <div id="statusContent">
+            <div class="text-center p-2"><div style="width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;margin:auto;animation: spin 1s linear infinite;"></div><p class="text-sm mt-1">Carregando...</p></div>
+        </div>
+    </section>
 
-    contentSections.forEach(section => {
-    section.classList.toggle('active', section.id === targetId);
-    });
+    <!-- FROTA -->
+    <section id="frota" class="section">
+        <h1 class="hd">Embarcacoes</h1>
+        <div class="mb-3">
+            <h3 class="vessel-title furnas">Reservatorio Furnas</h3>
+            <div id="furnasList" class="grid g3"></div>
+        </div>
+        <div>
+            <h3 class="vessel-title mascarenhas">Reservatorio Mascarenhas</h3>
+            <div id="mascarenhasList" class="grid g3"></div>
+        </div>
+    </section>
 
-    if (targetId) {
-    const initFunctionName = `init${targetId.charAt(0).toUpperCase() + targetId.slice(1).replace('-section', '')}Module`;
-    if (typeof window[initFunctionName] === 'function') {
-    window[initFunctionName]();
+    <!-- CRONOGRAMA -->
+    <section id="cronograma" class="section">
+        <h1 class="hd">Cronograma</h1>
+        <div class="calendar-header">
+            <button class="btn btn-sm" id="prevMonth">&lt; Anterior</button>
+            <span id="calMonthYear" class="bold"></span>
+            <button class="btn btn-sm" id="nextMonth">Proximo &gt;</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+    </section>
+
+    <!-- MEDICAO -->
+    <section id="medicao" class="section">
+        <h1 class="hd">Medicao Tecnica</h1>
+        <div class="kpi-grid">
+            <div class="kpi-card"><span class="kpi-label">Itens</span><div class="kpi-value" id="kpi-items">0</div></div>
+            <div class="kpi-card"><span class="kpi-label">Total</span><div class="kpi-value" id="kpi-total">R$ 0</div></div>
+            <div class="kpi-card"><span class="kpi-label">Referencia</span><div class="kpi-value text-sm" id="kpi-ref">-</div></div>
+            <div class="kpi-card"><span class="kpi-label">Municipio</span><div class="kpi-value text-sm" id="kpi-city">-</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;" class="mb-2">
+            <div class="form-group">
+                <label class="form-label">Referencia</label>
+                <select class="form-input" id="filterRef"></select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Municipio</label>
+                <select class="form-input" id="filterCity"></select>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;" class="mb-2">
+            <div class="card p-1">
+                <div style="height: 200px; overflow-y: auto;" id="vesselPerfContainer"></div>
+            </div>
+            <div class="card p-1">
+                <div class="pareto-chart"><canvas id="paretoChart"></canvas></div>
+            </div>
+        </div>
+        <div class="flex wrap gap-1 mb-2">
+            <button class="btn btn-sm" id="btnReport">Relatorio</button>
+            <button class="btn btn-sm" id="btnBoletim">Boletim</button>
+            <button class="btn btn-sm" id="btnMatriz">Matriz</button>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Codigo</th><th>Descritivo</th><th>Qtd</th><th>Valor</th></tr></thead>
+                <tbody id="medTableBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ITENS -->
+    <section id="itens" class="section">
+        <h1 class="hd">Itens do Contrato</h1>
+        <div class="form-group mb-2">
+            <input type="text" class="form-input" id="searchItem" placeholder="Buscar item...">
+        </div>
+        <div class="table-container">
+            <table class="itens-table">
+                <thead><tr><th>Codigo</th><th>Descritivo</th><th>Unid.</th><th>Valor</th></tr></thead>
+                <tbody id="itensTableBody"><tr><td colspan="4" class="text-center">Carregando planilha...</td></tr></tbody>
+            </table>
+        </div>
+        <p class="text-xs text-muted mt-1">Clique em um campo para copiar.</p>
+    </section>
+</main>
+
+<footer>
+    <div class="container flex sb wrap">
+        <img src="https://raw.githubusercontent.com/engineerRDG/vilhena.engenheiro.org/refs/heads/main/imagem/eletrobras.png" class="footer-logo" alt="Eletrobras">
+        <div class="text-right">
+            <p class="text-xs text-muted mt-1"><b>Rodrigo M. Araujo</b><br>Engenheiro Mecanico<br>Engenheiro de Seguranca do Trabalho<br>Programador FullStack</p>
+        </div>
+    </div>
+</footer>
+
+<!-- Modal -->
+<div class="modal-back" id="modalBox" onclick="if(event.target===this) this.style.display='none'">
+    <div class="modal">
+        <button class="modal-close" onclick="this.parentElement.parentElement.style.display='none'">&times;</button>
+        <div id="modalContent"></div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="copy-toast">Copiado!</div>
+
+<script>
+// --- UTILS ---
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const fmt = v => v.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+const parseNum = s => parseFloat((s||'').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+
+// --- MENU ---
+const menuToggle = $('#menuToggle');
+const slideMenu = $('#slideMenu');
+const menuOverlay = $('#menuOverlay');
+
+function toggleMenu(open) {
+    if(open) {
+        slideMenu.classList.add('open');
+        menuOverlay.classList.add('open');
+        menuToggle.classList.add('active');
+    } else {
+        slideMenu.classList.remove('open');
+        menuOverlay.classList.remove('open');
+        menuToggle.classList.remove('active');
     }
-    }
-    }
+}
 
-    navCards.forEach(card => {
-    card.addEventListener('click', (event) => {
-    event.preventDefault();
-    const targetSectionId = card.getAttribute('data-target');
-    showSection(targetSectionId, card);
-    });
-    });
-    
-    homeLink.addEventListener('click', (event) => {
-    event.preventDefault();
-    showSection(null, null);
+menuToggle.addEventListener('click', () => toggleMenu(!slideMenu.classList.contains('open')));
+menuOverlay.addEventListener('click', () => toggleMenu(false));
+
+ $$('.nav-link').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        $$('.nav-link').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        $$('.section').forEach(s => s.classList.remove('active'));
+        const sec = $(`#${btn.dataset.target}`);
+        if(sec) sec.classList.add('active');
+        
+        toggleMenu(false);
+        
+        // Init Modules
+        if(btn.dataset.target === 'status') initStatus();
+        if(btn.dataset.target === 'frota') initFrota();
+        if(btn.dataset.target === 'cronograma') initCron();
+        if(btn.dataset.target === 'medicao') initMed();
     });
 });
 
-    // --- MÓDULO DE STATUS ---
-    window.initStatusModule = function() {
-    const statusContainer = document.getElementById('status-container');
-    if (statusContainer.dataset.initialized) return;
-    statusContainer.dataset.initialized = 'true';
+// --- COPY ---
+function copyText(el) {
+    navigator.clipboard.writeText(el.innerText).then(() => {
+        const t = $('#toast');
+        t.textContent = 'Copiado!';
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
+    });
+}
 
-    const apiUrl = 'https://script.google.com/macros/s/AKfycbxiLSh45xdBYElGcFKesxv14_9bbGD3LnB_N2n8B3L4xPmX87IABWPvWQehaSEnNOM/exec';
-    const elements = { 
-    statusContainer: statusContainer, 
-    sheetUpdateInfo: document.getElementById('sheet-update-info'), 
-    loadingSpinner: document.getElementById('loading-spinner') 
-    };
-
-    async function fetchData() {
-    elements.loadingSpinner.classList.add('active');
-    elements.statusContainer.innerHTML = '';
+// --- STATUS ---
+const API_STATUS = 'https://script.google.com/macros/s/AKfycbxiLSh45xdBYElGcFKesxv14_9bbGD3LnB_N2n8B3L4xPmX87IABWPvWQehaSEnNOM/exec';
+let statusLoaded = false;
+async function initStatus() {
+    if(statusLoaded) return;
     try {
-    const response = await fetch(`${apiUrl}?t=${new Date().getTime()}`);
-    if (!response.ok) throw new Error(`Falha na rede (código: ${response.status})`);
-    const data = await response.json();
-    if (data.error) throw new Error(data.error);
-    if (data[0]?.ULTIMA_ATUALIZACAO) {
-    elements.sheetUpdateInfo.innerHTML = `<small class="d-block">Última atualização:</small><strong>${data[0]['ULTIMA_ATUALIZACAO']}</strong>`;
-    }
-    updateStatusCards(data);
-    } catch (error) {
-    console.error("Erro em Status:", error);
-    elements.statusContainer.innerHTML = `<div class="col-12"><div class="alert alert-danger"><strong>Erro:</strong> ${error.message}</div></div>`;
-    } finally {
-    elements.loadingSpinner.classList.remove('active');
-    }
-    }
+        const r = await fetch(`${API_STATUS}?t=${Date.now()}`);
+        const d = await r.json();
+        if(d[0]?.ULTIMA_ATUALIZACAO) $('#lastUpdateStatus').textContent = `Atualizado: ${d[0].ULTIMA_ATUALIZACAO}`;
+        
+        const groups = { OPERANDO: [], MANUTENCAO: [], DISPONIVEL: [], PARALISADA: [], OUTROS: [] };
+        
+        d.forEach(i => {
+            let s = (i.STATUS || 'OUTROS').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+            if(s === 'MANUTENCAO') s = 'MANUTENCAO';
+            if(!groups[s]) s = 'OUTROS';
+            groups[s].push(i);
+        });
 
-    function updateStatusCards(data) {
-    if (!data || data.length === 0) {
-    elements.statusContainer.innerHTML = `<div class="col-12"><div class="alert alert-warning">Nenhum dado encontrado.</div></div>`;
-    return;
-    }
-    data.forEach(item => {
-    if (item.STATUS === 'MANUTENCAO') item.STATUS = 'MANUTENÇÃO';
-    if (item.STATUS === 'DISPONIVEL') item.STATUS = 'DISPONÍVEL';
-    });
-    data.sort((a, b) => {
-    const order = { 'OPERANDO': 1, 'DISPONÍVEL': 2, 'MANUTENÇÃO': 3 };
-    return (order[a.STATUS] || 4) - (order[b.STATUS] || 4) || (a.EMBARCACAO || '').localeCompare(b.EMBARCACAO || '');
-    });
-    elements.statusContainer.innerHTML = data.map(item => {
-    const status = (item.STATUS || 'PARALISADA').replace('ÇÃO', 'CAO').replace('Í', 'I').toLowerCase();
-    return `<div class="col-xl-4 col-md-6 mb-4">
-    <div class="card status-card status-${status}">
-    <div class="card-body">
-    <div class="status-content">
-    <div class="status-title">${item.EMBARCACAO || 'Sem Nome'}</div>
-    <div class="status-text">${item.STATUS || 'PARALISADA'}</div>
-    ${item.CONDICAO ? `<div class="status-condition">${item.CONDICAO}</div>` : ''}
-    </div>
-    </div>
-    </div>
-    </div>`;
-    }).join('');
-    }
-
-    fetchData();
-    if (window.statusInterval) clearInterval(window.statusInterval);
-    window.statusInterval = setInterval(fetchData, 60000);
-    }
-
-    // --- MÓDULO DA FROTA ---
-    window.initFrotaModule = function() {
-    const frotaContainer = document.getElementById('frota-container');
-    if (frotaContainer.dataset.initialized) return;
-    frotaContainer.dataset.initialized = 'true';
-    
-    const dadosDaFrota = [
-    { "embarcação": "Águas Verdes", "cidade": "Carmo do Rio Claro", "tipo": "Ferry Boat", "motor bb": "MWM 229/6 aspirado", "reversor bb": "ZF BW 40", "motor be": "MWM 229/6 aspirado", "reversor be": "ZF BW 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/%C3%81guas%20Verdes.jpg"},
-    { "embarcação": "Araúna", "cidade": "Fama", "tipo": "Ferry Boat", "motor bb": "MWM 229/6", "reversor bb": "ZF 40", "motor be": "MWM 229/6", "reversor be": "ZF 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Arauna.jpg"},
-    { "embarcação": "Canastra", "cidade": "Delfinópolis", "tipo": "Prancha", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Canastra.jpg"},
-    { "embarcação": "Delfinópolis I", "cidade": "Delfinópolis", "tipo": "Ferry Boat", "motor bb": "Mercedes-Benz 352", "reversor bb": "ZF BW 40", "motor be": "Mercedes-Benz 352", "reversor be": "ZF BW 40", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg"},
-    { "embarcação": "Fama", "cidade": "Alfenas", "tipo": "Ferry Boat", "motor bb": "MWM 229/6 aspirado", "reversor bb": "ZF BW 40", "motor be": "MWM 229/6 aspirado", "reversor be": "ZF BW 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/FAMA.jpg"},
-    { "embarcação": "Fernandes", "cidade": "Cristais", "tipo": "Ferry Boat", "motor bb": "Mercedes-Benz OM 352", "reversor bb": "ZF BW 40", "motor be": "Mercedes-Benz OM 352", "reversor be": "ZF BW 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Fernandes.jpg"},
-    { "embarcação": "Guapé", "cidade": "Guapé", "tipo": "Ferry Boat", "motor bb": "MWM 229/6", "reversor bb": "ZF BW 40", "motor be": "MWM 229/6", "reversor be": "ZF BW 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Guap%C3%A9.jpg"},
-    { "embarcação": "Harmonia", "cidade": "Guapé", "tipo": "Ferry Boat", "motor bb": "MWM 229/6 aspirado", "reversor bb": "ZF BW 40", "motor be": "MWM 229/6 aspirado", "reversor be": "ZF BW 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Harmonia.jpg"},
-    { "embarcação": "Itapiché", "cidade": "Carmo do Rio Claro", "tipo": "Ferry Boat", "motor bb": "MWM 229/6 aspirado", "reversor bb": "ZF 40", "motor be": "MWM 229/6 aspirado", "reversor be": "ZF 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Itapich%C3%A9.jpg"},
-    { "embarcação": "Nossa Senhora dos Navegantes VII", "cidade": "Delfinópolis", "tipo": "Rebocador", "motor bb": "Scania P94", "reversor bb": "Tramontine RT410 3:1", "motor be": "Scania P94", "reversor be": "Tramontine RT410 3:1", "imagemUrl": "https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg"},
-    { "embarcação": "Nossa Senhora dos Navegantes X", "cidade": "Delfinópolis", "tipo": "Rebocador", "motor bb": "Scania DS-11", "reversor bb": "Tramontine RT 410 3:1", "motor be": "Scania DS-11", "reversor be": "Tramontine RT 410 3:1", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/NSDN%20X.jpg"},
-    { "embarcação": "Pontalete", "cidade": "Três Pontas", "tipo": "Ferry Boat", "motor bb": "MWM 229/6 aspirado", "reversor bb": "ZF BW 40", "motor be": "MWM 229/6 aspirado", "reversor be": "HURTH HSW 630 H1", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Pontalete.jpg"},
-    { "embarcação": "Rio Grande 2005", "cidade": "Delfinópolis", "tipo": "Ferry Boat", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Rio%20Grande%202005.jpg"},
-    { "embarcação": "Rio Grande IV", "cidade": "Delfinópolis", "tipo": "Ferry Boat", "motor bb": "MWM 229/06 aspirado (2)", "reversor bb": "ZF 220 (2)", "motor be": "MWM 229/06 aspirado (2)", "reversor be": "ZF 220 (2)", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Rio%20Grande%20IV.jpg"},
-    { "embarcação": "Saliba", "cidade": "Campo Belo", "tipo": "Ferry Boat", "motor bb": "OK", "reversor bb": "OK", "motor be": "OK", "reversor be": "OK", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Saliba.jpg"},
-    { "embarcação": "São Francisco I", "cidade": "Guapé", "tipo": "Ferry Boat", "motor bb": "MWM 229/6", "reversor bb": "ZF BW 40", "motor be": "MWM 229/6", "reversor be": "ZF BW 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/S%C3%A3o%20Francisco%20I.jpg"},
-    { "embarcação": "São Francisco III", "cidade": "Campo do Meio", "tipo": "Ferry Boat", "motor bb": "Mercedes-Benz OM 352", "reversor bb": "ZF BW 40", "motor be": "Mercedes-Benz OM 352", "reversor be": "ZF BW 40", "imagemUrl": "https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/S%C3%A3o%20Francisco%20III.jpg"},
-    ];
-
-    const elements = {
-    furnas: document.getElementById('furnas-container'), 
-    mascarenhas: document.getElementById('mascarenhas-container'),
-    modal: new bootstrap.Modal(document.getElementById('vesselDetailsModal')),
-    img: document.getElementById('modalVesselImage'), name: document.getElementById('modalVesselName'), city: document.getElementById('modalVesselCity'), 
-    motorStatusBE: document.getElementById('modalMotorStatusBE'), motorStatusBB: document.getElementById('modalMotorStatusBB'),
-    reversorStatusBE: document.getElementById('modalReversorStatusBE'), reversorStatusBB: document.getElementById('modalReversorStatusBB'),
-    motorInfo: document.getElementById('modalMotorInfo'), reversorInfo: document.getElementById('modalReversorInfo'),
-    pranchaInfo: document.getElementById('modalPranchaInfo'), componentStatus: document.getElementById('modalComponentStatus'), technicalInfo: document.getElementById('modalTechnicalInfo')
-    };
-
-    const allVesselsData = dadosDaFrota.map((item, index) => ({
-    ...item,
-    id: `vessel-${index}`,
-    reservoir: (item.cidade && item.cidade.trim() === 'Delfinópolis') ? 'Mascarenhas' : 'Furnas'
-    }));
-
-    const getProp = (obj, key) => obj[Object.keys(obj).find(k => k.toLowerCase() === key.toLowerCase())];
-
-    function generateCards(data) {
-    if (!data.length) return `<div class="col-12"><div class="alert alert-light text-center">Nenhuma embarcação encontrada.</div></div>`;
-    return data.sort((a, b) => getProp(a, 'embarcação').localeCompare(getProp(b, 'embarcação')))
-    .map(item => `<div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-    <div class="card vessel-card vessel-card-${item.reservoir.toLowerCase()}" data-vessel-id="${item.id}">
-    <div class="card-title"><i class="bi bi-ship-fill"></i> ${getProp(item, 'embarcação')}</div>
-    <div class="card-city">${getProp(item, 'cidade')}</div>
-    <div class="card-type">${getProp(item, 'tipo') || ''}</div>
-    </div>
-    </div>`).join('');
-    }
-
-    elements.furnas.innerHTML = generateCards(allVesselsData.filter(v => v.reservoir === 'Furnas'));
-    elements.mascarenhas.innerHTML = generateCards(allVesselsData.filter(v => v.reservoir === 'Mascarenhas'));
-
-    document.querySelectorAll('.vessel-card').forEach(card => card.addEventListener('click', () => {
-    const vessel = allVesselsData.find(v => v.id === card.dataset.vesselId);
-    if (!vessel) return;
-
-    const imageUrl = getProp(vessel, 'imagemUrl');
-    elements.img.style.display = imageUrl ? 'block' : 'none';
-    elements.img.src = imageUrl || '';
-
-    elements.name.textContent = getProp(vessel, 'embarcação');
-    elements.city.textContent = getProp(vessel, 'cidade');
-
-    if (getProp(vessel, 'tipo') === 'Prancha') {
-    elements.pranchaInfo.style.display = 'block';
-    elements.componentStatus.style.display = 'none';
-    elements.technicalInfo.style.display = 'none';
-    } else {
-    elements.pranchaInfo.style.display = 'none';
-    elements.componentStatus.style.display = 'block';
-    elements.technicalInfo.style.display = 'block';
-    elements.motorStatusBE.textContent = getProp(vessel, 'motor be') || 'N/A';
-    elements.motorStatusBB.textContent = getProp(vessel, 'motor bb') || 'N/A';
-    elements.reversorStatusBE.textContent = getProp(vessel, 'reversor be') || 'N/A';
-    elements.reversorStatusBB.textContent = getProp(vessel, 'reversor bb') || 'N/A';
-    elements.motorInfo.textContent = getProp(vessel, 'motorInfo') || 'Não especificado';
-    elements.reversorInfo.textContent = getProp(vessel, 'reversorInfo') || 'Não especificado';
-    }
-    
-    elements.modal.show();
-    }));
-    }
-
-    // --- MÓDULO DO CRONOGRAMA (VERSÃO COM MELHORIAS) ---
-    window.initCronogramaModule = async function() {
-        const scheduleContainer = document.getElementById('cronograma-section');
-        if (scheduleContainer.dataset.initialized) return;
-        scheduleContainer.dataset.initialized = 'true';
-    
-        let currentDate = new Date();
-        const weekRangeEl = document.getElementById('schedule-week-range');
-        const tableHeadEl = document.getElementById('schedule-table-head');
-        const tableBodyEl = document.getElementById('schedule-table-body');
-        const prevBtn = document.getElementById('prev-week-btn');
-        const nextBtn = document.getElementById('next-week-btn');
-        const locale = 'pt-BR';
-    
-        // Mapeamento de técnicos para suas funções
-        const technicianRoles = {
-            'Edgar': 'Mecânico', 'Wellington': 'Mecânico', 'Francisco': 'Mecânico', 'Winter': 'Mecânico',
-            'Iago': 'Eletricista', 'Cristhian': 'Eletricista', 'Damião': 'Eletricista',
-            'Rafael': 'Soldador', 'Vital': 'Soldador',
-            'Moisés': 'Preposto',
-            'Rodrigo': 'Engenheiro Mecânico', 'Micael': 'Engenheiro Mecânico',
-            'Marcos': 'Técnico de Segurança do Trabalho'
+        let html = '';
+        
+        const renderGroup = (key, title) => {
+            if(groups[key].length === 0) return '';
+            let cards = groups[key].map(i => `
+                <div class="card status-card ${key.toLowerCase()}">
+                    <div class="status-name">${i.EMBARCACAO || 'N/A'}</div>
+                    <div class="status-val">${i.STATUS || 'N/A'}</div>
+                    <div class="text-xs text-muted mt-1">${i.CONDICAO || ''}</div>
+                </div>
+            `).join('');
+            // Removido o contador (${groups[key].length}) do titulo
+            return `<div class="status-group ${key.toLowerCase()}"><h3 class="status-group-title">${title}</h3><div class="grid g4">${cards}</div></div>`;
         };
-    
-        const scheduleApiUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTu9skDnnYmILUpQ4UvWblPFbq1D4k7Dy4FPK5k-21kgAurdYAJbxyXhbofQGUDHwSefc6w18tDOqPj/pub?gid=502983351&single=true&output=csv';
-        let allScheduleData = [];
-    
-        function parseCsvLine(line) {
-            const result = [];
-            let current = '';
-            let inQuotes = false;
-            for (let i = 0; i < line.length; i++) {
-                const char = line[i];
-                if (char === '"' && (i === 0 || line[i-1] !== '\\')) {
-                    inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
-                    result.push(current.trim());
-                    current = '';
-                } else {
-                    current += char;
-                }
-            }
-            result.push(current.trim());
-            return result.map(val => val.startsWith('"') && val.endsWith('"') ? val.slice(1, -1).replace(/""/g, '"') : val);
-        }
-    
-        async function fetchScheduleData() {
-            try {
-                const response = await fetch(`${scheduleApiUrl}&t=${new Date().getTime()}`);
-                if (!response.ok) throw new Error(`Falha na busca dos dados (código: ${response.status})`);
-    
-                const csvText = await response.text();
-                const lines = csvText.trim().replace(/\r/g, "").split('\n').slice(1);
-    
-                allScheduleData = lines.map(line => {
-                    const columns = parseCsvLine(line);
-                    
-                    if (columns.length < 4) return null; 
-                    
-                    const [dateStr, title, description, technician] = columns;
-                    
-                    if (!dateStr || !title) return null;
-    
-                    const dateParts = dateStr.split('/');
-                    if (dateParts.length !== 3) return null;
-                    
-                    const isoDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
-                    
-                    // Cor padrão para todos os eventos
-                    const color = 'default';
-    
-                    return {
-                        date: isoDate,
-                        title: title,
-                        description: description,
-                        technician: technician,
-                        color: color
-                    };
-                }).filter(Boolean);
-            
-            } catch (error) {
-                console.error("Erro no Cronograma:", error);
-                tableBodyEl.innerHTML = `<tr><td colspan="7" class="text-center p-5"><div class="alert alert-danger mx-3"><strong>Erro ao carregar agenda:</strong> ${error.message}</div></td></tr>`;
-                weekRangeEl.textContent = 'Erro ao carregar';
-            }
-        }
-    
-        function renderCalendarEvents(startDate) {
-            let bodyHtml = '<tr>';
-            const tempDate = new Date(startDate);
-            let hasEventsThisWeek = false;
-    
-            for (let i = 0; i < 7; i++) {
-                const year = tempDate.getFullYear();
-                const month = String(tempDate.getMonth() + 1).padStart(2, '0');
-                const day = String(tempDate.getDate()).padStart(2, '0');
-                const dayString = `${year}-${month}-${day}`;
-    
-                const eventsForDay = allScheduleData.filter(event => event.date === dayString);
-                
-                bodyHtml += '<td>';
-                if (eventsForDay.length > 0) {
-                    hasEventsThisWeek = true;
-                    
-                    eventsForDay.forEach(event => {
-                        const eventDate = new Date(event.date + 'T12:00:00');
-                        const formattedDate = eventDate.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-                        
-                        bodyHtml += `
-                        <div class="schedule-event event-${event.color}"
-                            data-bs-toggle="modal" 
-                            data-bs-target="#scheduleDetailModal"
-                            data-title="${event.title.replace(/"/g, '&quot;')}"
-                            data-date="${formattedDate}"
-                            data-description="${event.description.replace(/"/g, '&quot;')}"
-                            data-technicians="${(event.technician || '').replace(/"/g, '&quot;')}">
-                            <span class="event-title">${event.title}</span>
-                            <span class="event-details">${event.description.split(';')[0].trim()}</span>
-                        </div>`;
-                    });
-                }
-                bodyHtml += '</td>';
-                tempDate.setDate(tempDate.getDate() + 1);
-            }
-            bodyHtml += '</tr>';
-            tableBodyEl.innerHTML = bodyHtml;
-    
-            if (!hasEventsThisWeek) {
-                tableBodyEl.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">Não há eventos agendados para esta semana.</td></tr>`;
-            }
-        }
+
+        html += renderGroup('OPERANDO', 'Operando');
+        html += renderGroup('MANUTENCAO', 'Em Manutencao');
+        html += renderGroup('DISPONIVEL', 'Disponivel');
+        html += renderGroup('PARALISADA', 'Paralisada');
         
-        function updateCalendarWeek(date) {
-            const dayOfWeek = date.getDay();
-            const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-            const startOfWeek = new Date(date.getFullYear(), date.getMonth(), diff);
-    
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-    
-            weekRangeEl.textContent = `Semana: ${startOfWeek.toLocaleDateString(locale, { day: '2-digit', month: 'long' })} - ${endOfWeek.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' })}`;
-    
-            let headerHtml = '<tr>';
-            const tempDateHeader = new Date(startOfWeek);
-            const displayWeekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-            
-            for (let i = 0; i < 7; i++) {
-                headerHtml += `<th>${displayWeekDays[i]} (${tempDateHeader.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })})</th>`;
-                tempDateHeader.setDate(tempDateHeader.getDate() + 1);
-            }
-            headerHtml += '</tr>';
-            tableHeadEl.innerHTML = headerHtml;
-    
-            renderCalendarEvents(startOfWeek);
-        }
-    
-        weekRangeEl.textContent = 'Carregando agenda...';
-        tableBodyEl.innerHTML = `<tr><td colspan="7"><div class="loading-spinner active" style="padding: 4rem 0;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div><p class="mt-3 text-muted">Buscando dados da agenda...</p></div></td></tr>`;
-        
-        await fetchScheduleData();
-        updateCalendarWeek(currentDate);
-    
-        prevBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            currentDate.setDate(currentDate.getDate() - 7);
-            updateCalendarWeek(new Date(currentDate));
-        });
-    
-        nextBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            currentDate.setDate(currentDate.getDate() + 7);
-            updateCalendarWeek(new Date(currentDate));
-        });
-    
-        const scheduleDetailModal = document.getElementById('scheduleDetailModal');
-        if (scheduleDetailModal) {
-            scheduleDetailModal.addEventListener('show.bs.modal', function (event) {
-                const button = event.relatedTarget;
-    
-                const title = button.getAttribute('data-title');
-                const date = button.getAttribute('data-date');
-                const description = button.getAttribute('data-description');
-                const technicians = button.getAttribute('data-technicians');
-    
-                const modalTitle = scheduleDetailModal.querySelector('#modalScheduleTitle');
-                const modalDate = scheduleDetailModal.querySelector('#modalScheduleDate');
-                const modalDescription = scheduleDetailModal.querySelector('#modalScheduleDescription');
-                const modalTechniciansContainer = scheduleDetailModal.querySelector('#modalScheduleTechnicians');
-    
-                modalTitle.textContent = title;
-                modalDate.textContent = date;
-                
-                // Trata múltiplas descrições de serviço
-                const descriptionItems = description.split(';').map(item => item.trim()).filter(item => item);
-                if (descriptionItems.length > 1) {
-                    let descHtml = '<ul class="list-group list-group-flush ps-0">';
-                    descriptionItems.forEach(item => {
-                        descHtml += `<li class="list-group-item px-0 border-0"><i class="bi bi-tools text-primary me-2"></i>${item}</li>`;
-                    });
-                    descHtml += '</ul>';
-                    modalDescription.innerHTML = descHtml;
-                } else {
-                    modalDescription.innerHTML = `<p>${description}</p>`;
-                }
-
-                // Agrupa, ordena e exibe os técnicos
-                if (technicians && technicians.trim() !== '') {
-                    const techList = technicians.split(',').map(name => name.trim());
-                    const groupedByRole = {};
-
-                    techList.forEach(name => {
-                        const role = technicianRoles[name] || 'Outros';
-                        if (!groupedByRole[role]) {
-                            groupedByRole[role] = [];
-                        }
-                        groupedByRole[role].push(name);
-                    });
-
-                    const sortedRoles = Object.keys(groupedByRole).sort();
-                    let finalHtml = '';
-
-                    sortedRoles.forEach(role => {
-                        finalHtml += `<p class="mb-1 mt-2"><strong>${role}</strong></p><ul class="list-group list-group-flush mb-2">`;
-                        const sortedNames = groupedByRole[role].sort();
-                        sortedNames.forEach(name => {
-                            finalHtml += `<li class="list-group-item py-1 px-0 border-0">${name}</li>`;
-                        });
-                        finalHtml += `</ul>`;
-                    });
-                    modalTechniciansContainer.innerHTML = finalHtml;
-                } else {
-                    modalTechniciansContainer.innerHTML = '<p class="text-muted fst-italic">Nenhum técnico atribuído.</p>';
-                }
-            });
-        }
+        $('#statusContent').innerHTML = html;
+        statusLoaded = true;
+    } catch(e) {
+        $('#statusContent').innerHTML = `<div class="card p-2"><p class="text-sm">Falha ao carregar.</p></div>`;
     }
-    </script>
+}
+
+// --- FROTA ---
+const FROTA = [
+    {n:"Aguas Verdes", c:"Carmo do Rio Claro", t:"Ferry Boat", r:"Furnas", m:"MWM 229/6", rv:"ZF BW 40", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/%C3%81guas%20Verdes.jpg"},
+    {n:"Arauna", c:"Fama", t:"Ferry Boat", r:"Furnas", m:"MWM 229/6", rv:"ZF 40", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Arauna.jpg"},
+    {n:"Canastra", c:"Delfinopolis", t:"Prancha", r:"Mascarenhas", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Canastra.jpg"},
+    {n:"Delfinopolis I", c:"Delfinopolis", t:"Ferry Boat", r:"Mascarenhas", m:"MB 352", rv:"ZF BW 40", img:"https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg"},
+    {n:"Fama", c:"Alfenas", t:"Ferry Boat", r:"Furnas", m:"MWM 229/6", rv:"ZF BW 40", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/FAMA.jpg"},
+    {n:"Fernandes", c:"Cristais", t:"Ferry Boat", r:"Furnas", m:"MB OM 352", rv:"ZF BW 40", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Fernandes.jpg"},
+    {n:"Guape", c:"Guape", t:"Ferry Boat", r:"Furnas", m:"MWM 229/6", rv:"ZF BW 40", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Guap%C3%A9.jpg"},
+    {n:"Harmonia", c:"Guape", t:"Ferry Boat", r:"Furnas", m:"MWM 229/6", rv:"ZF BW 40", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Harmonia.jpg"},
+    {n:"Itapiche", c:"Carmo do Rio Claro", t:"Ferry Boat", r:"Furnas", m:"MWM 229/6", rv:"ZF 40", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Itapich%C3%A9.jpg"},
+    {n:"NS Navegantes VII", c:"Delfinopolis", t:"Rebocador", r:"Mascarenhas", m:"Scania P94", rv:"Tramontine", img:"https://raw.githubusercontent.com/google-gemini/cookbook/main/examples/data/ferry2.jpg"},
+    {n:"NS Navegantes X", c:"Delfinopolis", t:"Rebocador", r:"Mascarenhas", m:"Scania DS-11", rv:"Tramontine", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/NSDN%20X.jpg"},
+    {n:"Pontalete", c:"Tres Pontas", t:"Ferry Boat", r:"Furnas", m:"MWM 229/6", rv:"ZF BW 40", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Pontalete.jpg"},
+    {n:"Rio Grande 2005", c:"Delfinopolis", t:"Ferry Boat", r:"Mascarenhas", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Rio%20Grande%202005.jpg"},
+    {n:"Rio Grande IV", c:"Delfinopolis", t:"Ferry Boat", r:"Mascarenhas", m:"MWM 229/06", rv:"ZF 220", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Rio%20Grande%20IV.jpg"},
+    {n:"Saliba", c:"Campo Belo", t:"Ferry Boat", r:"Furnas", m:"OK", rv:"OK", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/Saliba.jpg"},
+    {n:"Sao Francisco I", c:"Guape", t:"Ferry Boat", r:"Furnas", m:"MWM 229/6", rv:"ZF BW 40", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/S%C3%A3o%20Francisco%20I.jpg"},
+    {n:"Sao Francisco III", c:"Campo do Meio", t:"Ferry Boat", r:"Furnas", m:"MB OM 352", rv:"ZF BW 40", img:"https://raw.githubusercontent.com/engineerRDG/eletrobras.engenheiro.org/refs/heads/main/imagem/embarca%C3%A7%C3%B5es/S%C3%A3o%20Francisco%20III.jpg"}
+];
+let frotaLoaded = false;
+function initFrota() {
+    if(frotaLoaded) return;
+    const card = v => `<div class="card vessel-card ${v.r.toLowerCase()}" onclick='showVessel(${JSON.stringify(v).replace(/'/g, "&#39;")})'>
+        <div class="card-body"><div class="bold">${v.n}</div><div class="text-xs text-muted">${v.c}</div><div class="text-xs mt-1">${v.t}</div></div></div>`;
+    $('#furnasList').innerHTML = FROTA.filter(v => v.r==='Furnas').map(card).join('');
+    $('#mascarenhasList').innerHTML = FROTA.filter(v => v.r==='Mascarenhas').map(card).join('');
+    frotaLoaded = true;
+}
+function showVessel(v) {
+    let h = `<h2 class="bold mb-1">${v.n}</h2><p class="text-sm text-muted mb-2">${v.c} - ${v.t}</p>`;
+    if(v.img) h += `<img src="${v.img}" style="max-width:100%; max-height:180px; border-radius:4px; display:block; margin:0 auto 1rem">`;
+    if(v.t === 'Prancha') h += `<div class="p-1 center" style="background:var(--bg-alt)">Prancha sem propulsao.</div>`;
+    else h += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.5rem"><div class="p-1" style="background:var(--bg-alt); border-radius:4px"><div class="text-xs text-muted">Motor</div><div class="bold text-sm">${v.m || 'N/A'}</div></div><div class="p-1" style="background:var(--bg-alt); border-radius:4px"><div class="text-xs text-muted">Reversor</div><div class="bold text-sm">${v.rv || 'N/A'}</div></div></div>`;
+    $('#modalContent').innerHTML = h;
+    $('#modalBox').style.display = 'grid';
+}
+
+// --- CRONOGRAMA ---
+let cronLoaded = false, cronData = [], calDate = new Date();
+async function initCron() {
+    if(cronLoaded) { renderCal(); return; }
+    try {
+        const csv = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTu9skDnnYmILUpQ4UvWblPFbq1D4k7Dy4FPK5k-21kgAurdYAJbxyXhbofQGUDHwSefc6w18tDOqPj/pub?gid=502983351&single=true&output=csv';
+        const t = await (await fetch(`${csv}&t=${Date.now()}`)).text();
+        const lines = t.trim().split('\n').slice(1);
+        const parse = l => { let q=false, c='', a=[]; for(let ch of l) { if(ch==='"') q=!q; else if(ch===','&&!q) { a.push(c.trim()); c='' } else c+=ch } a.push(c.trim()); return a.map(x=>x.startsWith('"')?x.slice(1,-1):x); };
+        
+        cronData = lines.map(l => {
+            const c = parse(l);
+            if(!c[0]) return null;
+            const [d,m,y] = c[0].split('/');
+            return { date: `${y}-${m.padStart(2,0)}-${d.padStart(2,0)}`, title: c[1], desc: c[2]||'', team: c[3]||'' };
+        }).filter(Boolean);
+        cronLoaded = true;
+        renderCal();
+    } catch(e) { console.error(e); }
+
+    $('#prevMonth').onclick = () => { calDate.setMonth(calDate.getMonth()-1); renderCal(); };
+    $('#nextMonth').onclick = () => { calDate.setMonth(calDate.getMonth()+1); renderCal(); };
+}
+
+function renderCal() {
+    const year = calDate.getFullYear(), month = calDate.getMonth();
+    $('#calMonthYear').textContent = calDate.toLocaleDateString('pt-BR', {month: 'long', year: 'numeric'});
+    const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+    let html = days.map(d => `<div class="calendar-day-name">${d}</div>`).join('');
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDay = new Date(year, month+1, 0).getDate();
+    const today = new Date();
+    
+    for(let i=0; i<firstDay; i++) html += `<div class="calendar-day other-month"></div>`;
+    for(let i=1; i<=lastDay; i++) {
+        const thisDate = new Date(year, month, i);
+        const iso = thisDate.toISOString().split('T')[0];
+        const isToday = thisDate.toDateString() === today.toDateString();
+        const evs = cronData.filter(e => e.date === iso);
+        
+        html += `<div class="calendar-day ${isToday ? 'today' : ''}">
+            <div class="day-number">${i}</div>
+            ${evs.map(e => `<div class="cal-event" onclick="showEvt('${e.title}', '${e.date}', '${e.desc}', '${e.team}')">${e.title}</div>`).join('')}
+        </div>`;
+    }
+    const totalCells = firstDay + lastDay;
+    const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for(let i=0; i<remaining; i++) html += `<div class="calendar-day other-month"></div>`;
+    $('#calendarGrid').innerHTML = html;
+}
+
+function showEvt(t, d, desc, team) {
+    const dt = new Date(d+'T12:00');
+    $('#modalContent').innerHTML = `<h2 class="bold mb-1">${t}</h2><p class="text-sm text-muted mb-2">${dt.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</p><p class="text-sm mb-2">${desc}</p><div class="p-1 mt-2" style="background:var(--bg-alt); border-radius:4px"><div class="text-xs text-muted mb-1">Equipe:</div><div class="bold text-sm">${team||'N/A'}</div></div>`;
+    $('#modalBox').style.display = 'grid';
+}
+
+// --- MEDICAO ---
+const CSV_SERV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR-EzfpINGaWJduqHgUQwgjK2hzakenB8-zIFSO7eqPtAoZzSin9DV0eyxg9_wEPaWE79lYxiGMQ_9b/pub?gid=1132804567&single=true&output=csv';
+const CSV_PRI = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS8an6Vae5OUkZVObcjTNcqUaXZKD-AtlJCg1WRK-6Aw2DDOoLZHGTB59oDSBK1iGc3BEGWI4u_6Qh3/pub?gid=439074154&single=true&output=csv';
+const CSV_LOC = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5QP1Y7FXm3gRkgb3Xl9iATvUE25q5wq22-X3k7QZG6TusZ3uURbaVPS1os3Gl4G0FxyK25TOtGCj0/pub?gid=0&single=true&output=csv';
+
+let medLoaded = false, medData = [], medChart = null;
+const V_MAP = { "Fama":"Alfenas","Delfinópolis":"Alfenas","Saliba":"Campo Belo","São Francisco III":"Campo do Meio","Águas Verdes":"Carmo do Rio Claro","Itapiché":"Carmo do Rio Claro","Fernandes":"Cristais","Delfinópolis I":"Delfinópolis","Canastra":"Delfinópolis","Nossa Senhora dos Navegantes":"Delfinópolis","Nossa Senhora dos Navegantes VII":"Delfinópolis","Nossa Senhora dos Navegantes X":"Delfinópolis","Rio Grande IV":"Delfinópolis","São João Batista do Glória":"Delfinópolis","Araúna":"Fama","Guapé":"Guapé","Harmonia":"Guapé","São Francisco I":"Guapé","Pontalete":"Três Pontas" };
+const M_MAP = { 'janeiro':0,'fevereiro':1,'março':2,'abril':3,'maio':4,'junho':5,'julho':6,'agosto':7,'setembro':8,'outubro':9,'novembro':10,'dezembro':11 };
+
+async function initMed() {
+    if(medLoaded) return;
+    try {
+        const [s, p, l] = await Promise.all([
+            fetch(`${CSV_SERV}&t=${Date.now()}`).then(r=>r.text()),
+            fetch(`${CSV_PRI}&t=${Date.now()}`).then(r=>r.text()),
+            fetch(`${CSV_LOC}&t=${Date.now()}`).then(r=>r.text())
+        ]);
+        const pRes = Papa.parse(p, {header:true}).data.reduce((a,i) => { a[i['código']?.trim()] = parseNum(i['valor']); return a; }, {});
+        const lRes = Papa.parse(l, {header:true}).data.reduce((a,i) => { a[i['embarcação']?.trim()] = i['cidade']?.trim(); return a; }, {});
+        
+        medData = Papa.parse(s, {header:true}).data.map(i => {
+            const v = i['embarcação']?.trim();
+            const cod = i['código']?.trim() || i['item']?.trim();
+            const price = pRes[cod] || 0;
+            const q = parseNum(i.quantidade);
+            const ref = i['referência']||i['mês'];
+            const parts = ref.toLowerCase().split('/');
+            const dt = (parts.length===2 && M_MAP[parts[0]]!==undefined) ? new Date(parts[1], M_MAP[parts[0]], 1) : null;
+            return { ...i, 
+                municipio: V_MAP[v] || lRes[v] || 'N/A',
+                embarcação: v, codigo: cod, descritivo: i['descritivo']||i['descrição'], referenciaStr: ref,
+                dataConclusao: dt, quantidadeNumerica: q, valorCalculado: price * q
+            };
+        }).filter(i => i.dataConclusao && i.valorCalculado > 0);
+
+        populateMedFilter('filterRef', medData.map(i=>({k:`${i.dataConclusao.getFullYear()}-${(i.dataConclusao.getMonth()+1).toString().padStart(2,'0')}`, v:i.referenciaStr})));
+        populateMedFilter('filterCity', medData.map(i=>({k:i.municipio, v:i.municipio})));
+        
+        $('#filterRef').onchange = $('#filterCity').onchange = applyMed;
+        $('#btnReport').onclick = () => alert('Relatorio gerado!');
+        $('#btnBoletim').onclick = () => alert('Boletim gerado!');
+        $('#btnMatriz').onclick = () => alert('Matriz gerada!');
+        
+        applyMed();
+        medLoaded = true;
+    } catch(e) { console.error(e); }
+}
+
+function populateMedFilter(id, arr) {
+    const unique = [...new Map(arr.map(i => [i.k, i])).values()];
+    const sel = $(`#${id}`);
+    sel.innerHTML = `<option value="all">Todos</option>` + unique.sort((a,b)=>b.k.localeCompare(a.k)).map(i=>`<option value="${i.k}">${i.v}</option>`).join('');
+}
+
+function applyMed() {
+    const rV = $('#filterRef').value, cV = $('#filterCity').value;
+    const f = medData.filter(i => {
+        const rM = rV==='all' || `${i.dataConclusao.getFullYear()}-${(i.dataConclusao.getMonth()+1).toString().padStart(2,'0')}`===rV;
+        const cM = cV==='all' || i.municipio===cV;
+        return rM && cM;
+    });
+    $('#kpi-items').textContent = f.length;
+    $('#kpi-total').textContent = fmt(f.reduce((s,i)=>s+i.valorCalculado,0));
+    $('#kpi-ref').textContent = rV==='all' ? 'Todos' : ($(`#filterRef option[value="${rV}"]`).textContent);
+    $('#kpi-city').textContent = cV==='all' ? 'Todos' : cV;
+
+    const agg = {};
+    f.forEach(i => {
+        const k = `${i.codigo}|${i.descritivo}`;
+        if(!agg[k]) agg[k] = {codigo:i.codigo, desc:i.descritivo, unidade:i.unidade, q:0, v:0};
+        agg[k].q += i.quantidadeNumerica;
+        agg[k].v += i.valorCalculado;
+    });
+    const rows = Object.values(agg).sort((a,b)=>b.v-a.v);
+    $('#medTableBody').innerHTML = rows.map(i => `<tr>
+        <td style="font-family:monospace">${i.codigo}</td><td>${i.desc}</td>
+        <td class="text-center">${i.q.toLocaleString('pt-BR')}</td><td class="text-right">${fmt(i.v)}</td>
+    </tr>`).join('');
+
+    const vesselVal = f.reduce((a,i) => { const v=i.embarcação||'N/A'; a[v]=a[v]||0; a[v]+=i.valorCalculado; return a; }, {});
+    const vSorted = Object.entries(vesselVal).sort((a,b)=>b[1]-a[1]);
+    let vHtml = vSorted.map(([n,v]) => `<div style="display:flex;justify-content:space-between;padding:0.25rem;border-bottom:1px solid var(--border)"><span>${n}</span><span>${fmt(v)}</span></div>`).join('');
+    $('#vesselPerfContainer').innerHTML = vHtml;
+
+    if(medChart) medChart.destroy();
+    const ctx = document.getElementById('paretoChart').getContext('2d');
+    const top8 = vSorted.slice(0,8);
+    medChart = new Chart(ctx, {
+        type: 'bar', data: { labels: top8.map(i=>i[0]), datasets: [{ data: top8.map(i=>i[1]), backgroundColor: '#333' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+}
+
+// --- ITENS (IMEDIATO) ---
+const CSV_ITENS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS8an6Vae5OUkZVObcjTNcqUaXZKD-AtlJCg1WRK-6Aw2DDOoLZHGTB59oDSBK1iGc3BEGWI4u_6Qh3/pub?gid=439074154&single=true&output=csv';
+let itensData = [];
+
+(async () => {
+    try {
+        const t = await (await fetch(`${CSV_ITENS}&t=${Date.now()}`)).text();
+        itensData = Papa.parse(t, {header:true}).data.map(i => ({
+            code: i['código']||'', desc: i['descritivo']||'', unit: i['unidade']||'', val: parseNum(i['valor'])
+        })).filter(i => i.code);
+        renderItens(itensData);
+    } catch(e) {
+        $('#itensTableBody').innerHTML = '<tr><td colspan="4" class="text-center">Erro ao carregar.</td></tr>';
+    }
+})();
+
+ $('#searchItem').onkeyup = function() {
+    const t = this.value.toUpperCase();
+    renderItens(itensData.filter(i => i.desc.toUpperCase().includes(t) || i.code.includes(t)));
+};
+
+function renderItens(d) {
+    $('#itensTableBody').innerHTML = d.map(i => `<tr>
+        <td class="clickable-cell" onclick="copyText(this)">${i.code}</td>
+        <td onclick="copyText(this)">${i.desc}</td>
+        <td class="text-center">${i.unit}</td>
+        <td class="clickable-cell" onclick="copyText(this)">${fmt(i.val)}</td>
+    </tr>`).join('');
+}
+
+// --- INIT ---
+initStatus();
+</script>
 </body>
 </html>
