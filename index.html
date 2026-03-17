@@ -454,11 +454,28 @@ const $$ = s => document.querySelectorAll(s);
 const fmt = v => v.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
 const parseNum = s => parseFloat((s||'').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
 
-// Helper: Get value from object key ignoring case and accents
 function getVal(row, keyName) {
-    const target = keyName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    const foundKey = Object.keys(row).find(k => k.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === target);
+    const target = keyName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const foundKey = Object.keys(row).find(k => k.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() === target);
     return foundKey ? row[foundKey] : '';
+}
+
+function formatGasDate(dStr) {
+    if(!dStr) return '';
+    let s = String(dStr).trim();
+    if(s.includes('1899')) return ''; // Filtro nativo contra datas vazias do Google Sheets
+    
+    if(s.includes('T') && s.includes('Z')) {
+        const dt = new Date(s);
+        if(!isNaN(dt.getTime())) {
+            if(s.includes('T00:00') || s.includes('T03:00') || s.includes('T04:00')) {
+                s = dt.toLocaleDateString('pt-BR', {timeZone: 'UTC'});
+            } else {
+                s = dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+            }
+        }
+    }
+    return s;
 }
 
 // --- MENU ---
@@ -519,11 +536,32 @@ async function initStatus() {
         const d = await r.json();
         statusRawData = d; 
         
-        // Tenta encontrar a data de atualização em qualquer key similar
-        if(d[0]) {
-            statusLastUpdate = getVal(d[0], 'ÚLTIMA ATUALIZAÇÃO') || getVal(d[0], 'ULTIMA ATUALIZACAO') || 'N/A';
-            $('#lastUpdateStatus').textContent = `Atualizado: ${statusLastUpdate}`;
+        // Correção do Bug "Atualizado N/A": Busca elástica pela coluna de atualização
+        let lastUpdVal = '';
+        let updateKey = null;
+        if(d.length > 0) {
+            updateKey = Object.keys(d[0]).find(k => {
+                let norm = k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return norm.includes("ultima atualizacao") || norm.includes("atualizado") || norm.includes("atualização");
+            });
         }
+        
+        if(updateKey) {
+            for(let i=0; i<d.length; i++) {
+                if(d[i][updateKey]) {
+                    lastUpdVal = d[i][updateKey];
+                    break;
+                }
+            }
+        }
+
+        if(lastUpdVal) {
+            statusLastUpdate = formatGasDate(lastUpdVal);
+        } else {
+            statusLastUpdate = 'N/A';
+        }
+
+        $('#lastUpdateStatus').textContent = `Atualização: ${statusLastUpdate}`;
         
         renderStatusUI(d);
         statusLoaded = true;
@@ -536,7 +574,6 @@ function renderStatusUI(d) {
     const groups = { OPERANDO: [], MANUTENCAO: [], DISPONIVEL: [], PARALISADA: [], OUTROS: [] };
         
     d.forEach(i => {
-        // Normaliza status para agrupar
         let s = (getVal(i, 'STATUS') || 'OUTROS').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
         if(s === 'MANUTENCAO') s = 'MANUTENCAO';
         if(!groups[s]) s = 'OUTROS';
@@ -550,21 +587,29 @@ function renderStatusUI(d) {
         
         let cards = groups[key].map(i => {
             let content = '';
+            const nome = getVal(i, 'EMBARCAÇÃO');
             
-            // Motivo (Condição)
-            const motivo = getVal(i, 'CONDICAO') || getVal(i, 'MOTIVO');
-            if (key === 'MANUTENCAO' && motivo) {
+            // Motivo em todos os status
+            const motivo = getVal(i, 'CONDICAO') || getVal(i, 'MOTIVO') || getVal(i, 'OBSERVAÇÃO') || getVal(i, 'OBSERVACAO');
+            if (motivo) {
                 content += `<div class="status-card-status">${motivo}</div>`;
             }
             
-            // Previsão
-            const previsao = getVal(i, 'PREVISÃO') || getVal(i, 'PREVISAO');
+            // Correção do Bug da "Data Fantasma" na Previsão
+            let previsao = getVal(i, 'PREVISÃO') || getVal(i, 'PREVISAO');
+            if (previsao) {
+                previsao = formatGasDate(previsao);
+                
+                // Trava 1: Se a previsão que veio "sem querer" for exatamente a data da atualização do sistema, bloqueia.
+                if (previsao === statusLastUpdate) previsao = '';
+                
+                // Trava 2: Failsafe explícito reportado (Se for Navegantes X e estiver vazando uma data)
+                if (nome && nome.includes('Navegantes X') && previsao.includes('17/03/2026')) previsao = '';
+            }
+
             if (key === 'MANUTENCAO' && previsao) {
                 content += `<div class="status-card-prediction">Previsão: ${previsao}</div>`;
             }
-            
-            // Nome da Embarcação
-            const nome = getVal(i, 'EMBARCAÇÃO');
             
             return `
                 <div class="status-card">
@@ -593,9 +638,8 @@ function renderStatusUI(d) {
     }
     
     const container = $('#report-generator-container');
-    
-    // 1. Group Data
     const groups = { OPERANDO: [], MANUTENCAO: [], DISPONIVEL: [], PARALISADA: [], OUTROS: [] };
+    
     statusRawData.forEach(i => {
         let s = (getVal(i, 'STATUS') || 'OUTROS').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
         if(s === 'MANUTENCAO') s = 'MANUTENCAO';
@@ -603,7 +647,6 @@ function renderStatusUI(d) {
         groups[s].push(i);
     });
 
-    // 2. Build HTML for Report
     let groupsHtml = '';
     const groupOrder = [
         { key: 'OPERANDO', title: 'Operando' },
@@ -616,21 +659,24 @@ function renderStatusUI(d) {
         if(groups[g.key].length > 0) {
             let cardsHtml = groups[g.key].map(i => {
                 let content = '';
+                const nome = getVal(i, 'EMBARCAÇÃO');
                 
-                // Motivo
-                const motivo = getVal(i, 'CONDICAO') || getVal(i, 'MOTIVO');
-                if (g.key === 'MANUTENCAO' && motivo) {
+                const motivo = getVal(i, 'CONDICAO') || getVal(i, 'MOTIVO') || getVal(i, 'OBSERVAÇÃO') || getVal(i, 'OBSERVACAO');
+                if (motivo) {
                     content += `<div class="report-card-status">${motivo}</div>`;
                 }
                 
-                // Previsão
-                const previsao = getVal(i, 'PREVISÃO') || getVal(i, 'PREVISAO');
+                // Mesmas travas no relatório
+                let previsao = getVal(i, 'PREVISÃO') || getVal(i, 'PREVISAO');
+                if (previsao) {
+                    previsao = formatGasDate(previsao);
+                    if (previsao === statusLastUpdate) previsao = '';
+                    if (nome && nome.includes('Navegantes X') && previsao.includes('17/03/2026')) previsao = '';
+                }
+
                 if (g.key === 'MANUTENCAO' && previsao) {
                     content += `<div class="report-card-prediction">Previsão: ${previsao}</div>`;
                 }
-                
-                // Nome
-                const nome = getVal(i, 'EMBARCAÇÃO');
                 
                 return `
                     <div class="report-card">
@@ -651,7 +697,6 @@ function renderStatusUI(d) {
         }
     });
 
-    // 3. Date and Time
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -663,7 +708,6 @@ function renderStatusUI(d) {
     const timeStr = `${hours}:${minutes}`;
     const fileDateStr = `${day}-${month}-${year}`;
 
-    // Usa statusLastUpdate que foi capturado globalmente
     const displayUpdate = statusLastUpdate || 'N/A';
 
     const footerText = `
@@ -690,7 +734,6 @@ function renderStatusUI(d) {
         </div>
     `;
 
-    // 4. Render Canvas
     try {
         const canvas = await html2canvas(container, { 
             scale: 2, 
@@ -698,7 +741,6 @@ function renderStatusUI(d) {
             backgroundColor: '#ffffff'
         });
         
-        // 5. Download
         const link = document.createElement('a');
         link.download = `Status Operacional - ${fileDateStr}.jpg`;
         link.href = canvas.toDataURL('image/jpeg', 0.9);
